@@ -70,7 +70,7 @@ export function PropertiesPanel() {
 
     Object.entries(element.data || {}).forEach(([key, value]) => {
       if (typeof value === 'number' && fieldMapping[key]) {
-        dataUpdate[key] = Number(convertValue(value, currentUnit, newUnit, fieldMapping[key]).toFixed(2));
+        dataUpdate[key] = Number(convertValue(value, currentUnit, newUnit, fieldMapping[key]).toFixed(4));
       }
     });
 
@@ -78,7 +78,7 @@ export function PropertiesPanel() {
     if (element.data?.schedulePoints) {
       dataUpdate.schedulePoints = (element.data.schedulePoints as any[]).map(p => ({
         ...p,
-        flow: Number(convertValue(p.flow, currentUnit, newUnit, 'flow').toFixed(2))
+        flow: Number(convertValue(p.flow, currentUnit, newUnit, 'flow').toFixed(4))
       }));
     }
 
