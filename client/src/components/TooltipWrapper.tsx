@@ -57,7 +57,6 @@ export function DataList({ data, title }: { data: any, title: string }) {
       // Filter based on flags
       if (key === 'diameter' && data.hasShape) return false;
       if (key === 'shape' && !data.hasShape) return false;
-      if ((key === 'cplus' || key === 'cminus') && !data.hasAddedLoss) return false;
 
       // Filter out duplicate/mismatched property names
       if (key === 'topElevation' || key === 'bottomElevation') return false;
