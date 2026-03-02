@@ -557,6 +557,8 @@ function DesignerInner() {
                   onEdgeClick={onEdgeClick}
                   onSelectionChange={onSelectionChange as any}
                   fitView
+                  minZoom={0.05}
+                  maxZoom={4}
                   className="bg-slate-50"
                   proOptions={{ hideAttribution: true }}
                   nodesDraggable={!isLocked}
