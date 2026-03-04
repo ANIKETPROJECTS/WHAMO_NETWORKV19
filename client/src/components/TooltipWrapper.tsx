@@ -145,7 +145,15 @@ export function DataList({ data, title }: { data: any, title: string }) {
               <span className="text-slate-500 font-medium capitalize">{label}:</span>
               <span className="text-slate-900 font-bold text-right">
                 {key === 'shape' && Array.isArray(value) 
-                  ? value.map((v: any, i: number) => `(E:${v.e}, A:${v.a})${i < value.length - 1 ? ', ' : ''}`)
+                  ? (
+                    <div className="flex flex-col items-end mt-0.5">
+                      {value.map((v: any, i: number) => (
+                        <span key={i} className="leading-tight">
+                          (E:{v.e}, A:{v.a}){i < value.length - 1 ? ',' : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )
                   : (typeof value === 'number' ? value : String(value))
                 }
                 {unitStr && <span className="ml-0.5 text-[9px] font-normal text-slate-400">{unitStr}</span>}
