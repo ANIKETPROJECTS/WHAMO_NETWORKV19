@@ -8,8 +8,8 @@ export function generateSystemDiagramSVG(nodes: WhamoNode[], edges: WhamoEdge[],
   // Create a copy of nodes to not mutate store
   const diagramNodes = [...nodes];
   
-  // Identify start nodes (reservoirs)
-  const reservoirs = diagramNodes.filter(n => n.type === 'reservoir');
+  // Identify start nodes (nodes with no incoming edges)
+  const sourceNodes = diagramNodes.filter(n => !edges.some(e => e.target === n.id));
   
   // Build adjacency list for layout
   const adj: Record<string, string[]> = {};
@@ -18,10 +18,14 @@ export function generateSystemDiagramSVG(nodes: WhamoNode[], edges: WhamoEdge[],
     adj[e.source].push(e.target);
   });
 
-  // Assign levels (columns) based on distance from reservoirs
+  // Assign levels (columns) based on distance from source nodes
   const levels: Record<string, number> = {};
-  const queue: string[] = reservoirs.map(r => r.id);
-  reservoirs.forEach(r => levels[r.id] = 0);
+  const queue: string[] = sourceNodes.length > 0 ? sourceNodes.map(s => s.id) : (diagramNodes.length > 0 ? [diagramNodes[0].id] : []);
+  
+  sourceNodes.forEach(s => levels[s.id] = 0);
+  if (sourceNodes.length === 0 && diagramNodes.length > 0) {
+    levels[diagramNodes[0].id] = 0;
+  }
 
   while (queue.length > 0) {
     const u = queue.shift()!;
@@ -35,6 +39,13 @@ export function generateSystemDiagramSVG(nodes: WhamoNode[], edges: WhamoEdge[],
       }
     });
   }
+
+  // Ensure all nodes have a level even if not reachable from sources
+  diagramNodes.forEach(n => {
+    if (levels[n.id] === undefined) {
+      levels[n.id] = 0;
+    }
+  });
 
   // Group nodes by level
   const levelsMap: Record<number, string[]> = {};

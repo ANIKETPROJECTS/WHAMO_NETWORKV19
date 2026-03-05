@@ -86,18 +86,19 @@ export function generateInpFile(nodes: WhamoNode[], edges: WhamoEdge[], autoDown
     }
   }
 
-  // Start traversal from reservoirs
-  const reservoirs = nodes.filter(n => n.type === 'reservoir');
-  reservoirs.forEach(r => traverse(r.id));
+  // Start traversal from all nodes that have no incoming edges (potential sources)
+  const sourceNodes = nodes.filter(n => !edges.some(e => e.target === n.id));
+  if (sourceNodes.length > 0) {
+    sourceNodes.forEach(s => traverse(s.id));
+  } else if (nodes.length > 0) {
+    // If it's a cycle or something weird, just start from the first node
+    traverse(nodes[0].id);
+  }
 
-  // Handle any disconnected components (e.g. ST, FB if not reached by traversal)
+  // Handle any remaining unvisited nodes to ensure full connectivity is captured
   nodes.forEach(n => {
     if (!visitedNodes.has(n.id)) {
-      if (n.type === 'surgeTank' || n.type === 'flowBoundary') {
-        const actualNodeId = n.data.nodeNumber?.toString() || n.id;
-        connectivityLines.push(`ELEM ${n.data.label} AT ${actualNodeId}`);
-        nodeIdsWithSpecialElements.add(actualNodeId);
-      }
+      traverse(n.id);
     }
   });
 
