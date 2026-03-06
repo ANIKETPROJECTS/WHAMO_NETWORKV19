@@ -32,7 +32,7 @@ export function validateNetwork(nodes: WhamoNode[], edges: WhamoEdge[]): { error
   nodes.forEach(n => {
     if (n.type !== 'node' && n.type !== 'junction') { 
       if ((idCounts.get(n.data.label) || 0) > 1) {
-        addError(n.id, `Duplicate ID detected: ${n.type} ${n.data.label} appears multiple times.`, n.data.label, n.type);
+        addWarning(n.id, `Duplicate ID detected: ${n.type} ${n.data.label} appears multiple times.`, n.data.label, n.type);
       }
     }
   });
@@ -190,9 +190,9 @@ export function validateNetwork(nodes: WhamoNode[], edges: WhamoEdge[]): { error
     const d = e.data;
     if (d?.type === 'conduit') {
       if (d.length === undefined || d.length === '') addError(e.id, `Conduit ${d.label} missing required parameter: Length`, d.label, d.type);
-      if (!d.variable && (d.diameter === undefined || d.diameter === '')) addError(e.id, `Conduit ${d.label} missing required parameter: Diameter`, d.label, d.type);
-      if (d.celerity === undefined || d.celerity === '') addError(e.id, `Conduit ${d.label} missing required parameter: Celerity`, d.label, d.type);
-      if (d.friction === undefined || d.friction === '') addError(e.id, `Conduit ${d.label} missing required parameter: Friction`, d.label, d.type);
+      if (!d.variable && (d.diameter === undefined || d.diameter === '')) addWarning(e.id, `Conduit ${d.label} missing required parameter: Diameter`, d.label, d.type);
+      if (d.celerity === undefined || d.celerity === '') addWarning(e.id, `Conduit ${d.label} missing required parameter: Celerity`, d.label, d.type);
+      if (d.friction === undefined || d.friction === '') addWarning(e.id, `Conduit ${d.label} missing required parameter: Friction`, d.label, d.type);
 
       if (Number(d.length) < 1) addWarning(e.id, `Pipe ${d.label} has very short length detected.`, d.label, d.type);
       if (Number(d.friction) > 0.1) addWarning(e.id, `Pipe ${d.label} friction value unusually high.`, d.label, d.type);
