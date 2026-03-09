@@ -33,7 +33,7 @@ export function setupWhamoRoutes(app: any) {
       // 3. Pass filenames via stdin
       const stdinContent = `input.inp\ninput_OUT.OUT\ninput_PLT.PLT\ninput_SHEET.TAB\n`;
 
-      const child = exec(command, { cwd: runDir, timeout: 60000 }, (error, stdout, stderr) => {
+      const child = exec(command, { cwd: runDir, timeout: 60000, maxBuffer: 1024 * 1024 * 100 }, (error, stdout, stderr) => {
         if (error) {
           console.error("WHAMO execution error:", error);
           return res.status(500).json({
