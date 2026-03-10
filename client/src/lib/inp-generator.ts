@@ -358,7 +358,9 @@ export function generateInpFile(nodes: WhamoNode[], edges: WhamoEdge[], autoDown
 
   const flowBoundaries = nodes.filter(n => n.type === 'flowBoundary');
   if (flowBoundaries.length > 0) {
-    addL('SCHEDULE');
+    // Deduplicate QSCHEDULE entries by schedule number and values
+    const scheduleMap = new Map<string, string>();
+    
     flowBoundaries.forEach(n => {
       const d = n.data;
       const unit = d.unit || globalUnit;
@@ -368,10 +370,19 @@ export function generateInpFile(nodes: WhamoNode[], edges: WhamoEdge[], autoDown
       } else {
         schedule = 'T 0 Q 3000 T 20 Q 0 T 3000 Q 0';
       }
-      addL(` QSCHEDULE ${d.scheduleNumber} ${schedule}`);
+      
+      const scheduleKey = `${d.scheduleNumber}:${schedule}`;
+      scheduleMap.set(scheduleKey, ` QSCHEDULE ${d.scheduleNumber} ${schedule}`);
     });
-    addL('FINISH');
-    addL('');
+    
+    if (scheduleMap.size > 0) {
+      addL('SCHEDULE');
+      scheduleMap.forEach(scheduleStr => {
+        addL(scheduleStr);
+      });
+      addL('FINISH');
+      addL('');
+    }
   }
   addL('');
   addL('C OUTPUT REQUEST');
