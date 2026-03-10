@@ -262,23 +262,27 @@ export function Toolbar({ onExport, onSave, onLoad }: { onExport: (fileName?: st
                           </SelectItem>
                         ))}
                       <SelectItem value="___" disabled>Conduits</SelectItem>
-                      {edges
-                        .filter(e => e.data?.type === 'conduit')
-                        .filter(e => !outputRequests.some(req => req.elementId === e.id && req.requestType === requestType))
-                        .map(e => (
-                          <SelectItem key={e.id} value={e.id}>
-                            {e.data?.label || `Edge ${e.id}`}
-                          </SelectItem>
-                        ))}
+                      {Array.from(new Map(
+                        edges
+                          .filter(e => e.data?.type === 'conduit')
+                          .filter(e => !outputRequests.some(req => req.elementId === e.id && req.requestType === requestType))
+                          .map(e => [e.data?.label || `Edge ${e.id}`, e])
+                      ).entries()).map(([label, e]) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {label}
+                        </SelectItem>
+                      ))}
                       <SelectItem value="____" disabled>Dummy pipe</SelectItem>
-                      {edges
-                        .filter(e => e.data?.type === 'dummy')
-                        .filter(e => !outputRequests.some(req => req.elementId === e.id && req.requestType === requestType))
-                        .map(e => (
-                          <SelectItem key={e.id} value={e.id}>
-                            {e.data?.label || `Edge ${e.id}`}
-                          </SelectItem>
-                        ))}
+                      {Array.from(new Map(
+                        edges
+                          .filter(e => e.data?.type === 'dummy')
+                          .filter(e => !outputRequests.some(req => req.elementId === e.id && req.requestType === requestType))
+                          .map(e => [e.data?.label || `Edge ${e.id}`, e])
+                      ).entries()).map(([label, e]) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
