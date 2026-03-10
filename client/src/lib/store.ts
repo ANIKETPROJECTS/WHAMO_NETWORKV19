@@ -374,13 +374,31 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     // Auto-select output requests for the new node
     const availableVars = ["Q", "HEAD", "ELEV", "VEL", "PRESS", "PIEZHEAD"];
     const requestTypes: ("HISTORY" | "PLOT" | "SPREADSHEET")[] = ["HISTORY", "PLOT", "SPREADSHEET"];
-    const newRequests: OutputRequest[] = requestTypes.map(reqType => ({
-      id: `req-${Date.now()}-${Math.random()}`,
-      elementId: id,
-      elementType: 'node',
-      requestType: reqType,
-      variables: [...availableVars]
-    }));
+    const newRequests: OutputRequest[] = [];
+    
+    requestTypes.forEach(reqType => {
+      // Add Node request
+      newRequests.push({
+        id: `req-${Date.now()}-${Math.random()}`,
+        elementId: id,
+        elementType: 'node',
+        isElement: false,
+        requestType: reqType,
+        variables: [...availableVars]
+      });
+
+      // If it's a surge tank, also add the Element request
+      if (type === 'surgeTank') {
+        newRequests.push({
+          id: `req-${Date.now()}-${Math.random()}`,
+          elementId: id,
+          elementType: 'node',
+          isElement: true,
+          requestType: reqType,
+          variables: [...availableVars]
+        });
+      }
+    });
     
     set({ outputRequests: [...get().outputRequests, ...newRequests] });
   },
