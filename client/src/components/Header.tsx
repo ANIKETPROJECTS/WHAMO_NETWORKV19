@@ -585,79 +585,97 @@ export function Header({
                     <DialogHeader>
                       <div className="flex items-center justify-between">
                         <DialogTitle>Configure Output Requests</DialogTitle>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Elements to select: nodes (excluding special types if any) and edges
-                            // Types mentioned: node, conduit (edge), dummypipe (edge), other (edge)
-                            // The user wants All History, Plot and Spreadsheet
-                            const types: ("HISTORY" | "PLOT" | "SPREADSHEET")[] = ["HISTORY", "PLOT", "SPREADSHEET"];
-                            const variables = ["Q", "HEAD", "ELEV", "VEL", "PRESS", "PIEZHEAD"];
-                            
-                            // Add requests for all nodes
-                            nodes.forEach(node => {
-                              const isSurgeTank = node.data.type === 'surgeTank';
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Elements to select: nodes (excluding special types if any) and edges
+                              // Types mentioned: node, conduit (edge), dummypipe (edge), other (edge)
+                              // The user wants All History, Plot and Spreadsheet
+                              const types: ("HISTORY" | "PLOT" | "SPREADSHEET")[] = ["HISTORY", "PLOT", "SPREADSHEET"];
+                              const variables = ["Q", "HEAD", "ELEV", "VEL", "PRESS", "PIEZHEAD"];
                               
-                              types.forEach(type => {
-                                // Regular node request
-                                const existsNode = outputRequests.some(req => 
-                                  req.elementId === node.id && 
-                                  req.requestType === type &&
-                                  req.isElement === false
-                                );
-                                if (!existsNode) {
-                                  addOutputRequest({
-                                    elementId: node.id,
-                                    elementType: "node",
-                                    requestType: type,
-                                    isElement: false,
-                                    variables: [...variables]
-                                  });
-                                }
-
-                                // If it's a surge tank, also add the ELEM request
-                                if (isSurgeTank) {
-                                  const existsElem = outputRequests.some(req => 
+                              // Add requests for all nodes
+                              nodes.forEach(node => {
+                                const isSurgeTank = node.data.type === 'surgeTank';
+                                
+                                types.forEach(type => {
+                                  // Regular node request
+                                  const existsNode = outputRequests.some(req => 
                                     req.elementId === node.id && 
                                     req.requestType === type &&
-                                    req.isElement === true
+                                    req.isElement === false
                                   );
-                                  if (!existsElem) {
+                                  if (!existsNode) {
                                     addOutputRequest({
                                       elementId: node.id,
                                       elementType: "node",
+                                      requestType: type,
+                                      isElement: false,
+                                      variables: [...variables]
+                                    });
+                                  }
+
+                                  // If it's a surge tank, also add the ELEM request
+                                  if (isSurgeTank) {
+                                    const existsElem = outputRequests.some(req => 
+                                      req.elementId === node.id && 
+                                      req.requestType === type &&
+                                      req.isElement === true
+                                    );
+                                    if (!existsElem) {
+                                      addOutputRequest({
+                                        elementId: node.id,
+                                        elementType: "node",
+                                        requestType: type,
+                                        isElement: true,
+                                        variables: [...variables]
+                                      });
+                                    }
+                                  }
+                                });
+                              });
+                              
+                              // Add requests for all edges (deduplicated by label)
+                              const uniqueEdges = Array.from(new Map(
+                                edges.map(e => [e.data?.label || e.id, e])
+                              ).values());
+                              
+                              uniqueEdges.forEach(edge => {
+                                types.forEach(type => {
+                                  const exists = outputRequests.some(req => 
+                                    req.elementId === edge.id && 
+                                    req.requestType === type
+                                  );
+                                  if (!exists) {
+                                    addOutputRequest({
+                                      elementId: edge.id,
+                                      elementType: "edge",
                                       requestType: type,
                                       isElement: true,
                                       variables: [...variables]
                                     });
                                   }
-                                }
+                                });
                               });
-                            });
-                            
-                            // Add requests for all edges
-                            edges.forEach(edge => {
-                              types.forEach(type => {
-                                const exists = outputRequests.some(req => 
-                                  req.elementId === edge.id && 
-                                  req.requestType === type
-                                );
-                                if (!exists) {
-                                  addOutputRequest({
-                                    elementId: edge.id,
-                                    elementType: "edge",
-                                    requestType: type,
-                                    isElement: true,
-                                    variables: [...variables]
-                                  });
-                                }
+                            }}
+                          >
+                            Select All
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              [...outputRequests].forEach(req => {
+                                removeOutputRequest(req.id);
                               });
-                            });
-                          }}
-                        >
-                          Select All
-                        </Button>
+                            }}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            Clear All
+                          </Button>
+                        </div>
                       </div>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
