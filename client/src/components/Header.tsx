@@ -28,7 +28,6 @@ import {
   ArrowRightCircle,
   ListVideo,
   Info,
-  ExternalLink,
   CheckSquare,
 } from "lucide-react";
 import {
@@ -491,80 +490,6 @@ export function Header({
                 <MenubarItem onClick={onShowDiagram} className="gap-2">
                   <Layout className="w-4 h-4" /> System Diagram Console
                 </MenubarItem>
-                <MenubarItem
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = ".inp";
-                    input.onchange = async (e) => {
-                      const file = (e.target as HTMLInputElement).files?.[0];
-                      if (!file) return;
-                      const content = await file.text();
-                      try {
-                        const response = await fetch(
-                          "/api/run-external-whamo",
-                          {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              inpContent: content,
-                              fileName: file.name,
-                            }),
-                          },
-                        );
-                        if (!response.ok)
-                          throw new Error("Failed to generate WHAMO files");
-                        
-                        const data = await response.json();
-                        
-                        // Handle both array and object formats
-                        const filesToDownload = Array.isArray(data.files) 
-                          ? data.files 
-                          : Object.entries(data.files || {}).map(([key, content]) => ({
-                              name: file.name.replace(".inp", `.${key}`),
-                              content: content as string,
-                              type: "text/plain"
-                            }));
-
-                        if (filesToDownload.length === 0) {
-                          throw new Error("No output files received from server");
-                        }
-
-                        filesToDownload.forEach((file: { name: string; content: string; type?: string }) => {
-                          const byteCharacters = atob(file.content);
-                          const byteNumbers = new Array(byteCharacters.length);
-                          for (let i = 0; i < byteCharacters.length; i++) {
-                            byteNumbers[i] = byteCharacters.charCodeAt(i);
-                          }
-                          const byteArray = new Uint8Array(byteNumbers);
-                          const blob = new Blob([byteArray], { type: file.type || "text/plain" });
-                          
-                          const url = window.URL.createObjectURL(blob);
-                          const a = document.createElement("a");
-                          a.href = url;
-                          a.download = file.name;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          window.URL.revokeObjectURL(url);
-                        });
-                      } catch (err) {
-                        toast({
-                          title: "Error",
-                          description:
-                            "Failed to generate .OUT file from external .INP",
-                          variant: "destructive",
-                        });
-                      }
-                    };
-                    input.click();
-                  }}
-                  className="gap-2"
-                >
-                  <ExternalLink className="w-4 h-4" /> Generate external .out
-                  file
-                </MenubarItem>
-                <MenubarSeparator />
                 <MenubarItem onClick={() => {
                   const event = new CustomEvent('toggleNodeSelection');
                   window.dispatchEvent(event);
