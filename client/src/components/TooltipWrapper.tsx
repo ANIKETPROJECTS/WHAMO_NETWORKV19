@@ -41,7 +41,7 @@ export function DataList({ data, title }: { data: any, title: string }) {
   if (!data) return null;
   
   const globalUnit = useNetworkStore(state => state.globalUnit);
-  const unit = globalUnit;
+  const unit = (data.unit as string) || globalUnit;
 
   const HIDDEN_KEYS = new Set([
     'label', 'unit', 'type', 'hasAddedLoss', 'hasShape',
