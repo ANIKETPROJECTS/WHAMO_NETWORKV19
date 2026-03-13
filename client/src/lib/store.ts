@@ -575,8 +575,27 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
         selectedElementType: state.selectedElementId === id ? null : state.selectedElementType
       });
     } else {
+      const remainingEdges = state.edges.filter(e => e.id !== id);
+
+      // Auto-downgrade junctions back to plain nodes when they drop to ≤2 connections
+      const nodeIdsToDowngrade: string[] = [];
+      for (const n of state.nodes) {
+        if (n.type !== 'junction') continue;
+        const degree = remainingEdges.filter(e => e.source === n.id || e.target === n.id).length;
+        if (degree <= 2) nodeIdsToDowngrade.push(n.id);
+      }
+
+      const updatedNodes = nodeIdsToDowngrade.length > 0
+        ? state.nodes.map(n =>
+            nodeIdsToDowngrade.includes(n.id)
+              ? { ...n, type: 'node' as NodeType, data: { ...n.data, type: 'node' as NodeType } }
+              : n
+          )
+        : state.nodes;
+
       set({ 
-        edges: state.edges.filter(e => e.id !== id),
+        nodes: updatedNodes,
+        edges: remainingEdges,
         selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
         selectedElementType: state.selectedElementId === id ? null : state.selectedElementType
       });
