@@ -42,6 +42,7 @@ export function PropertiesPanel() {
     celerity: 3.28084, // m/s to ft/s
     area: 10.7639, // m2 to ft2
     flow: 35.3147, // m3/s to ft3/s
+    pressure: 1 / 6894.76, // Pa to psi
   };
 
   const convertValue = (value: number, from: UnitSystem, to: UnitSystem, type: keyof typeof SI_TO_FPS) => {
@@ -63,7 +64,9 @@ export function PropertiesPanel() {
     riserTop: 'elevation',
     distance: 'length',
     celerity: 'celerity',
-    area: 'area'
+    area: 'area',
+    pipeWT: 'diameter',   // wall thickness (ft or m)
+    pipeE: 'pressure',    // modulus of elasticity (psi or Pa)
   };
 
   const cacheableFields = Object.keys(fieldMapping);
@@ -817,24 +820,19 @@ export function PropertiesPanel() {
                     value={element.data?.celerity || 0} 
                     onChange={(e) => {
                       handleChange('celerity', e.target.value);
-                      const cStored = parseFloat(e.target.value);
-                      if (!isNaN(cStored) && cStored > 0) {
-                        const cFps = currentUnit === 'SI' ? cStored * 3.28084 : cStored;
-                        const diamFt = currentUnit === 'SI'
-                          ? (parseFloat(element.data?.diameter) || 0) * 3.28084
-                          : (parseFloat(element.data?.diameter) || 0);
-                        const ratio = (4720 / cFps) ** 2 - 1;
-                        if (diamFt > 0 && ratio > 0) {
+                      const c = parseFloat(e.target.value);
+                      if (!isNaN(c) && c > 0) {
+                        const C0 = currentUnit === 'SI' ? 1440 : 4720;
+                        const Kw = currentUnit === 'SI' ? 2.07e9 : 3e5;
+                        const D = parseFloat(element.data?.diameter) || 0;
+                        const ratio = (C0 / c) ** 2 - 1;
+                        if (D > 0 && ratio > 0) {
                           const WT = parseFloat(element.data?.pipeWT) || 0;
-                          const wtFt = currentUnit === 'SI' ? WT * 3.28084 : WT;
-                          const E = parseFloat(element.data?.pipeE) || 0;
-                          if (wtFt > 0) {
-                            const calcE = (3e5 * diamFt) / (wtFt * ratio);
-                            handleChange('pipeE', parseFloat(calcE.toFixed(2)).toString());
+                          const E  = parseFloat(element.data?.pipeE)  || 0;
+                          if (WT > 0) {
+                            handleChange('pipeE', parseFloat(((Kw * D) / (WT * ratio)).toFixed(2)).toString());
                           } else if (E > 0) {
-                            const calcWtFt = (3e5 * diamFt) / (E * ratio);
-                            const calcWT = currentUnit === 'SI' ? calcWtFt / 3.28084 : calcWtFt;
-                            handleChange('pipeWT', parseFloat(calcWT.toFixed(6)).toString());
+                            handleChange('pipeWT', parseFloat(((Kw * D) / (E * ratio)).toFixed(6)).toString());
                           }
                         }
                       }
@@ -874,7 +872,7 @@ export function PropertiesPanel() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="pipe-e">
-                      Modulus of Elasticity (E, psi)
+                      E ({currentUnit === 'SI' ? 'Pa' : 'psi'})
                       {element.data?.pipeWT && !element.data?.pipeE
                         ? <span className="ml-1 text-xs text-primary">← auto</span>
                         : null}
@@ -883,31 +881,24 @@ export function PropertiesPanel() {
                       id="pipe-e"
                       data-testid="input-pipe-e"
                       type="number"
-                      placeholder="e.g. 30000000"
+                      placeholder={currentUnit === 'SI' ? 'e.g. 2.07e11' : 'e.g. 30000000'}
                       value={element.data?.pipeE ?? ''}
                       onChange={(e) => {
                         handleChange('pipeE', e.target.value);
-                        const E = parseFloat(e.target.value);
-                        if (!isNaN(E) && E > 0) {
+                        const E  = parseFloat(e.target.value);
+                        const C0 = currentUnit === 'SI' ? 1440 : 4720;
+                        const Kw = currentUnit === 'SI' ? 2.07e9 : 3e5;
+                        const D  = parseFloat(element.data?.diameter) || 0;
+                        if (!isNaN(E) && E > 0 && D > 0) {
                           const WT = parseFloat(element.data?.pipeWT) || 0;
-                          const wtFt = currentUnit === 'SI' ? WT * 3.28084 : WT;
-                          const diamFt = currentUnit === 'SI'
-                            ? (parseFloat(element.data?.diameter) || 0) * 3.28084
-                            : (parseFloat(element.data?.diameter) || 0);
-                          if (wtFt > 0 && diamFt > 0) {
-                            const cFps = 4720 / Math.sqrt(1 + (3e5 / E) * (diamFt / wtFt));
-                            const c = currentUnit === 'SI' ? cFps / 3.28084 : cFps;
+                          if (WT > 0) {
+                            const c = C0 / Math.sqrt(1 + (Kw / E) * (D / WT));
                             handleChange('celerity', parseFloat(c.toFixed(4)).toString());
                           } else {
-                            const cStored = parseFloat(element.data?.celerity) || 0;
-                            if (cStored > 0 && diamFt > 0) {
-                              const cFps = currentUnit === 'SI' ? cStored * 3.28084 : cStored;
-                              const ratio = (4720 / cFps) ** 2 - 1;
-                              if (ratio > 0) {
-                                const calcWtFt = (3e5 * diamFt) / (E * ratio);
-                                const calcWT = currentUnit === 'SI' ? calcWtFt / 3.28084 : calcWtFt;
-                                handleChange('pipeWT', parseFloat(calcWT.toFixed(6)).toString());
-                              }
+                            const c = parseFloat(element.data?.celerity) || 0;
+                            if (c > 0) {
+                              const ratio = (C0 / c) ** 2 - 1;
+                              if (ratio > 0) handleChange('pipeWT', parseFloat(((Kw * D) / (E * ratio)).toFixed(6)).toString());
                             }
                           }
                         }
@@ -916,7 +907,7 @@ export function PropertiesPanel() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pipe-wt">
-                      Wall Thickness (WT, {currentUnit === 'SI' ? 'm' : 'ft'})
+                      WT ({currentUnit === 'SI' ? 'm' : 'ft'})
                       {element.data?.pipeE && !element.data?.pipeWT
                         ? <span className="ml-1 text-xs text-primary">← auto</span>
                         : null}
@@ -926,30 +917,24 @@ export function PropertiesPanel() {
                       data-testid="input-pipe-wt"
                       type="number"
                       step="0.001"
-                      placeholder="e.g. 0.02"
+                      placeholder={currentUnit === 'SI' ? 'e.g. 0.006' : 'e.g. 0.02'}
                       value={element.data?.pipeWT ?? ''}
                       onChange={(e) => {
                         handleChange('pipeWT', e.target.value);
                         const WT = parseFloat(e.target.value);
-                        if (!isNaN(WT) && WT > 0) {
-                          const wtFt = currentUnit === 'SI' ? WT * 3.28084 : WT;
+                        const C0 = currentUnit === 'SI' ? 1440 : 4720;
+                        const Kw = currentUnit === 'SI' ? 2.07e9 : 3e5;
+                        const D  = parseFloat(element.data?.diameter) || 0;
+                        if (!isNaN(WT) && WT > 0 && D > 0) {
                           const E = parseFloat(element.data?.pipeE) || 0;
-                          const diamFt = currentUnit === 'SI'
-                            ? (parseFloat(element.data?.diameter) || 0) * 3.28084
-                            : (parseFloat(element.data?.diameter) || 0);
-                          if (E > 0 && diamFt > 0) {
-                            const cFps = 4720 / Math.sqrt(1 + (3e5 / E) * (diamFt / wtFt));
-                            const c = currentUnit === 'SI' ? cFps / 3.28084 : cFps;
+                          if (E > 0) {
+                            const c = C0 / Math.sqrt(1 + (Kw / E) * (D / WT));
                             handleChange('celerity', parseFloat(c.toFixed(4)).toString());
                           } else {
-                            const cStored = parseFloat(element.data?.celerity) || 0;
-                            if (cStored > 0 && diamFt > 0) {
-                              const cFps = currentUnit === 'SI' ? cStored * 3.28084 : cStored;
-                              const ratio = (4720 / cFps) ** 2 - 1;
-                              if (ratio > 0) {
-                                const calcE = (3e5 * diamFt) / (wtFt * ratio);
-                                handleChange('pipeE', parseFloat(calcE.toFixed(2)).toString());
-                              }
+                            const c = parseFloat(element.data?.celerity) || 0;
+                            if (c > 0) {
+                              const ratio = (C0 / c) ** 2 - 1;
+                              if (ratio > 0) handleChange('pipeE', parseFloat(((Kw * D) / (WT * ratio)).toFixed(2)).toString());
                             }
                           }
                         }
@@ -958,7 +943,11 @@ export function PropertiesPanel() {
                   </div>
                 </div>
                 <div className="rounded bg-muted px-3 py-2 text-sm text-muted-foreground">
-                  <span>c = 4720 / √(1 + (3·10⁵/E) · (D/WT))</span>
+                  <span>
+                    {currentUnit === 'SI'
+                      ? 'c = 1440 / √(1 + (2.07·10⁹/E) · (D/WT))'
+                      : 'c = 4720 / √(1 + (3·10⁵/E) · (D/WT))'}
+                  </span>
                   {element.data?.celerity && (element.data?.pipeE || element.data?.pipeWT) ? (
                     <span className="ml-2 font-semibold text-foreground">
                       = {parseFloat(Number(element.data.celerity).toFixed(4))} {currentUnit === 'SI' ? 'm/s' : 'ft/s'}
