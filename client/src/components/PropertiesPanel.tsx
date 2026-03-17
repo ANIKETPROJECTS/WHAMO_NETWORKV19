@@ -96,10 +96,11 @@ export function PropertiesPanel() {
     const dataUpdate: any = { unit: newUnit, _unitCache: newCache };
 
     // For each convertible field: use cached value if defined, otherwise math-convert.
-    // This ensures fields edited after the last cache save are always converted correctly.
+    // pipeE and pipeWT are excluded here — they are always math-converted below for precision.
     const cachedTarget: Record<string, any> = newCache[newUnit] || {};
     Object.entries(element.data || {}).forEach(([key, value]) => {
       if (!fieldMapping[key]) return;
+      if (key === 'pipeE' || key === 'pipeWT') return;
       const cachedVal = cachedTarget[key];
       if (cachedVal !== undefined) {
         dataUpdate[key] = cachedVal;
@@ -111,15 +112,22 @@ export function PropertiesPanel() {
       }
     });
 
-    // Explicit conversion for pipeE (psi ↔ Pa) and pipeWT (ft ↔ m)
-    // Done explicitly rather than via generic loop to guarantee correct conversion
+    // pipeE (Pa ↔ psi) and pipeWT (m ↔ ft) are always converted mathematically,
+    // bypassing the cache to avoid stale values. High-precision output ensures
+    // small values (e.g. Pa→psi) are not rounded to zero.
     if (element.data?.pipeE != null && element.data.pipeE !== '') {
       const val = parseFloat(String(element.data.pipeE));
-      if (!isNaN(val)) dataUpdate.pipeE = parseFloat(convertValue(val, currentUnit, newUnit, 'pressure').toFixed(2));
+      if (!isNaN(val)) {
+        const converted = convertValue(val, currentUnit, newUnit, 'pressure');
+        dataUpdate.pipeE = parseFloat(converted.toPrecision(10));
+      }
     }
     if (element.data?.pipeWT != null && element.data.pipeWT !== '') {
       const val = parseFloat(String(element.data.pipeWT));
-      if (!isNaN(val)) dataUpdate.pipeWT = parseFloat(convertValue(val, currentUnit, newUnit, 'diameter').toFixed(6));
+      if (!isNaN(val)) {
+        const converted = convertValue(val, currentUnit, newUnit, 'diameter');
+        dataUpdate.pipeWT = parseFloat(converted.toPrecision(10));
+      }
     }
 
     // Handle schedulePoints
