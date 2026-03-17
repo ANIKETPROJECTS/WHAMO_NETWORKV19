@@ -819,52 +819,43 @@ export function PropertiesPanel() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="friction">Friction (f)</Label>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <button
-                        type="button"
-                        data-testid="friction-mode-direct"
-                        onClick={() => handleChange('frictionMode', 'direct')}
-                        className={`px-1.5 py-0.5 rounded text-xs font-medium transition-colors ${
-                          (element.data?.frictionMode || 'direct') === 'direct'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted hover:bg-muted/80'
-                        }`}
-                      >
-                        Direct
-                      </button>
-                      <button
-                        type="button"
-                        data-testid="friction-mode-manning"
-                        onClick={() => handleChange('frictionMode', 'manning')}
-                        className={`px-1.5 py-0.5 rounded text-xs font-medium transition-colors ${
-                          (element.data?.frictionMode || 'direct') === 'manning'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted hover:bg-muted/80'
-                        }`}
-                      >
-                        Manning's n
-                      </button>
-                    </div>
-                  </div>
-                  {(element.data?.frictionMode || 'direct') === 'direct' ? (
-                    <Input 
-                      id="friction" 
-                      data-testid="input-friction"
-                      type="number" 
-                      step="0.001"
-                      value={element.data?.friction || 0} 
-                      onChange={(e) => handleChange('friction', e.target.value)} 
-                    />
-                  ) : (
-                    <div className="space-y-1">
+                  <Label htmlFor="friction">Friction (f)</Label>
+                  <Input 
+                    id="friction" 
+                    data-testid="input-friction"
+                    type="number" 
+                    step="0.001"
+                    value={element.data?.friction || 0} 
+                    onChange={(e) => handleChange('friction', e.target.value)} 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-md border border-dashed p-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="use-mannings"
+                    data-testid="friction-mode-manning"
+                    checked={(element.data?.frictionMode || 'direct') === 'manning'}
+                    onCheckedChange={(checked) =>
+                      handleChange('frictionMode', checked ? 'manning' : 'direct')
+                    }
+                  />
+                  <Label htmlFor="use-mannings" className="cursor-pointer font-medium">
+                    Calculate friction from Manning's n
+                  </Label>
+                </div>
+
+                {(element.data?.frictionMode || 'direct') === 'manning' && (
+                  <div className="space-y-3 pt-1">
+                    <div className="space-y-2">
+                      <Label htmlFor="mannings-n">Manning's Coefficient (n)</Label>
                       <Input
                         id="mannings-n"
                         data-testid="input-mannings-n"
                         type="number"
                         step="0.0001"
-                        placeholder="Enter n"
+                        placeholder="e.g. 0.013"
                         value={element.data?.manningsN || ''}
                         onChange={(e) => {
                           const n = parseFloat(e.target.value);
@@ -880,15 +871,17 @@ export function PropertiesPanel() {
                           }
                         }}
                       />
-                      <p className="text-xs text-muted-foreground">
-                        f = 185·n² / D<sup>1/3</sup>
-                        {element.data?.manningsN && element.data?.friction ? (
-                          <span className="ml-1 font-medium text-foreground">= {parseFloat(Number(element.data.friction).toFixed(6))}</span>
-                        ) : null}
-                      </p>
                     </div>
-                  )}
-                </div>
+                    <div className="rounded bg-muted px-3 py-2 text-sm text-muted-foreground">
+                      <span>f = 185 · n² / D<sup>1/3</sup></span>
+                      {element.data?.manningsN && element.data?.friction ? (
+                        <span className="ml-2 font-semibold text-foreground">
+                          = {parseFloat(Number(element.data.friction).toFixed(6))}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="segments">Num Segments</Label>
