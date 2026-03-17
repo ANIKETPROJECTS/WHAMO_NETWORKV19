@@ -856,7 +856,7 @@ export function PropertiesPanel() {
                         type="number"
                         step="0.0001"
                         placeholder="e.g. 0.013"
-                        value={element.data?.manningsN || ''}
+                        value={element.data?.manningsN ?? ''}
                         onChange={(e) => {
                           const n = parseFloat(e.target.value);
                           handleChange('manningsN', e.target.value);
