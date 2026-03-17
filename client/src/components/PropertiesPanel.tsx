@@ -815,7 +815,30 @@ export function PropertiesPanel() {
                     id="celerity" 
                     type="number" 
                     value={element.data?.celerity || 0} 
-                    onChange={(e) => handleChange('celerity', e.target.value)}
+                    onChange={(e) => {
+                      handleChange('celerity', e.target.value);
+                      const cStored = parseFloat(e.target.value);
+                      if (!isNaN(cStored) && cStored > 0) {
+                        const cFps = currentUnit === 'SI' ? cStored * 3.28084 : cStored;
+                        const diamFt = currentUnit === 'SI'
+                          ? (parseFloat(element.data?.diameter) || 0) * 3.28084
+                          : (parseFloat(element.data?.diameter) || 0);
+                        const ratio = (4720 / cFps) ** 2 - 1;
+                        if (diamFt > 0 && ratio > 0) {
+                          const WT = parseFloat(element.data?.pipeWT) || 0;
+                          const wtFt = currentUnit === 'SI' ? WT * 3.28084 : WT;
+                          const E = parseFloat(element.data?.pipeE) || 0;
+                          if (wtFt > 0) {
+                            const calcE = (3e5 * diamFt) / (wtFt * ratio);
+                            handleChange('pipeE', parseFloat(calcE.toFixed(2)).toString());
+                          } else if (E > 0) {
+                            const calcWtFt = (3e5 * diamFt) / (E * ratio);
+                            const calcWT = currentUnit === 'SI' ? calcWtFt / 3.28084 : calcWtFt;
+                            handleChange('pipeWT', parseFloat(calcWT.toFixed(6)).toString());
+                          }
+                        }
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -855,15 +878,28 @@ export function PropertiesPanel() {
                       onChange={(e) => {
                         handleChange('pipeE', e.target.value);
                         const E = parseFloat(e.target.value);
-                        const WT = parseFloat(element.data?.pipeWT) || 0;
-                        const wtFt = currentUnit === 'SI' ? WT * 3.28084 : WT;
-                        const diamFt = currentUnit === 'SI'
-                          ? (parseFloat(element.data?.diameter) || 0) * 3.28084
-                          : (parseFloat(element.data?.diameter) || 0);
-                        if (!isNaN(E) && E > 0 && wtFt > 0 && diamFt > 0) {
-                          const cFps = 4720 / Math.sqrt(1 + (3e5 / E) * (diamFt / wtFt));
-                          const c = currentUnit === 'SI' ? cFps / 3.28084 : cFps;
-                          handleChange('celerity', parseFloat(c.toFixed(4)).toString());
+                        if (!isNaN(E) && E > 0) {
+                          const WT = parseFloat(element.data?.pipeWT) || 0;
+                          const wtFt = currentUnit === 'SI' ? WT * 3.28084 : WT;
+                          const diamFt = currentUnit === 'SI'
+                            ? (parseFloat(element.data?.diameter) || 0) * 3.28084
+                            : (parseFloat(element.data?.diameter) || 0);
+                          if (wtFt > 0 && diamFt > 0) {
+                            const cFps = 4720 / Math.sqrt(1 + (3e5 / E) * (diamFt / wtFt));
+                            const c = currentUnit === 'SI' ? cFps / 3.28084 : cFps;
+                            handleChange('celerity', parseFloat(c.toFixed(4)).toString());
+                          } else {
+                            const cStored = parseFloat(element.data?.celerity) || 0;
+                            if (cStored > 0 && diamFt > 0) {
+                              const cFps = currentUnit === 'SI' ? cStored * 3.28084 : cStored;
+                              const ratio = (4720 / cFps) ** 2 - 1;
+                              if (ratio > 0) {
+                                const calcWtFt = (3e5 * diamFt) / (E * ratio);
+                                const calcWT = currentUnit === 'SI' ? calcWtFt / 3.28084 : calcWtFt;
+                                handleChange('pipeWT', parseFloat(calcWT.toFixed(6)).toString());
+                              }
+                            }
+                          }
                         }
                       }}
                     />
@@ -880,15 +916,27 @@ export function PropertiesPanel() {
                       onChange={(e) => {
                         handleChange('pipeWT', e.target.value);
                         const WT = parseFloat(e.target.value);
-                        const E = parseFloat(element.data?.pipeE) || 0;
-                        const diamFt = currentUnit === 'SI'
-                          ? (parseFloat(element.data?.diameter) || 0) * 3.28084
-                          : (parseFloat(element.data?.diameter) || 0);
-                        const wtFt = currentUnit === 'SI' ? WT * 3.28084 : WT;
-                        if (!isNaN(WT) && WT > 0 && E > 0 && diamFt > 0) {
-                          const cFps = 4720 / Math.sqrt(1 + (3e5 / E) * (diamFt / wtFt));
-                          const c = currentUnit === 'SI' ? cFps / 3.28084 : cFps;
-                          handleChange('celerity', parseFloat(c.toFixed(4)).toString());
+                        if (!isNaN(WT) && WT > 0) {
+                          const wtFt = currentUnit === 'SI' ? WT * 3.28084 : WT;
+                          const E = parseFloat(element.data?.pipeE) || 0;
+                          const diamFt = currentUnit === 'SI'
+                            ? (parseFloat(element.data?.diameter) || 0) * 3.28084
+                            : (parseFloat(element.data?.diameter) || 0);
+                          if (E > 0 && diamFt > 0) {
+                            const cFps = 4720 / Math.sqrt(1 + (3e5 / E) * (diamFt / wtFt));
+                            const c = currentUnit === 'SI' ? cFps / 3.28084 : cFps;
+                            handleChange('celerity', parseFloat(c.toFixed(4)).toString());
+                          } else {
+                            const cStored = parseFloat(element.data?.celerity) || 0;
+                            if (cStored > 0 && diamFt > 0) {
+                              const cFps = currentUnit === 'SI' ? cStored * 3.28084 : cStored;
+                              const ratio = (4720 / cFps) ** 2 - 1;
+                              if (ratio > 0) {
+                                const calcE = (3e5 * diamFt) / (wtFt * ratio);
+                                handleChange('pipeE', parseFloat(calcE.toFixed(2)).toString());
+                              }
+                            }
+                          }
                         }
                       }}
                     />
