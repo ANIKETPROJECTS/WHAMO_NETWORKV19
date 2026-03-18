@@ -419,7 +419,7 @@ function DesignerInner() {
       
       toast({ title: "Files Generated", description: "WHAMO input file and System Diagram downloaded successfully." });
     } catch (err) {
-      toast({ variant: "destructive", title: "Generation Failed", description: "Could not generate files. Check connections." });
+      toast({ variant: "destructive", title: "Generation Failed", description: err instanceof Error ? err.message : "Could not generate files. Check connections." });
     }
   };
 

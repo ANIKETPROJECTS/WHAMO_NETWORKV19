@@ -394,6 +394,16 @@ export function generateInpFile(nodes: WhamoNode[], edges: WhamoEdge[], autoDown
     return acc;
   }, {} as Record<string, typeof state.outputRequests>);
 
+  const MAX_OUTPUT_REQUESTS = 48;
+  Object.entries(requestsByType).forEach(([type, reqs]) => {
+    if (reqs.length > MAX_OUTPUT_REQUESTS) {
+      throw new Error(
+        `Output requests in "${type}" exceed the limit of ${MAX_OUTPUT_REQUESTS}. ` +
+        `Currently ${reqs.length} requests. Please remove ${reqs.length - MAX_OUTPUT_REQUESTS} request(s) from this type.`
+      );
+    }
+  });
+
   const requestTypes = Object.keys(requestsByType);
 
   if (requestTypes.length > 0) {
