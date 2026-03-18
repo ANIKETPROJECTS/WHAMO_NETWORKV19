@@ -1,0 +1,79 @@
+**Prompt: Fix Default Variable Selection & Sync Across Request Types (Without Changing Core Logic)**
+
+You are a senior React.js developer. Update the "Configure Output Requests" module behavior without modifying any backend logic, API calls, or core data structures.
+
+---
+
+## Requirement
+
+### 1. Remove Auto-Selection on Load
+
+* Currently, when the network diagram is loaded, **all variables (Q, HEAD, ELEV, etc.) are automatically selected by default**.
+* This behavior must be removed.
+
+### New Behavior:
+
+* When opening the "Configure Output Requests" modal:
+
+  * **No variables should be selected by default**
+  * User must manually select variables
+
+---
+
+### 2. Sync Selection Across Request Types (History → Plot → Spreadsheet)
+
+* When a user selects variables in **HISTORY**:
+
+  * Those same variables should be **automatically selected in PLOT and SPREADSHEET**
+
+Example:
+
+* User selects: Q, HEAD in HISTORY
+  → Automatically apply:
+* PLOT → Q, HEAD
+* SPREADSHEET → Q, HEAD
+
+---
+
+### 3. Bidirectional Consistency
+
+* If user updates selection in any request type:
+
+  * Changes should reflect across all (HISTORY, PLOT, SPREADSHEET)
+* Selection must remain **globally synced**
+
+---
+
+## Constraints
+
+Do NOT change:
+
+* Existing request creation logic
+* Backend/API structure
+* Data parsing or storage logic
+* Existing UI flow
+
+Only update:
+
+* Default selection behavior
+* Shared state handling for variables
+
+---
+
+## Implementation Suggestion
+
+* Remove any **defaultChecked / initial state prefill logic**
+* Use a **shared state (useState / Context / lifted state)** for:
+
+  * selectedVariables
+* Bind all request type UIs to this shared state
+* Ensure updates propagate instantly across all types
+
+---
+
+## Expected Result
+
+* No variables selected initially
+* User manually selects variables
+* Once selected in any request type, all other types reflect the same selection automatically
+* Clean, predictable, and user-controlled selection behavior

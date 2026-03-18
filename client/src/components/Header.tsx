@@ -277,7 +277,6 @@ export function Header({
                 <MenubarItem
                   onClick={() => {
                     clearNetwork();
-                    useNetworkStore.getState().autoSelectOutputRequests();
                   }}
                   className="gap-2"
                 >
