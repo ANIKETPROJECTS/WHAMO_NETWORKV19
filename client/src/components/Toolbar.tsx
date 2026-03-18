@@ -77,8 +77,6 @@ export function Toolbar({ onExport, onSave, onLoad }: { onExport: (fileName?: st
       requestType: requestType,
       variables: selectedVars
     });
-    setSelectedElementId("");
-    setSelectedVars([]);
   };
 
   const availableVars = ["Q", "HEAD", "ELEV", "VEL", "PRESS", "PIEZHEAD"];

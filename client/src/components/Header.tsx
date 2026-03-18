@@ -143,8 +143,6 @@ export function Header({
       requestType: requestType,
       variables: selectedVars,
     });
-    setSelectedElementId("");
-    setSelectedVars([]);
     toast({
       title: "Request Added",
       description: "Output request added successfully.",
