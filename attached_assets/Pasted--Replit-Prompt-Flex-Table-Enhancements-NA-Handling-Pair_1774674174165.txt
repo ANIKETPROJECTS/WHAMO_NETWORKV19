@@ -1,0 +1,151 @@
+✅ Replit Prompt: Flex Table Enhancements (NA Handling + Pair Expansion + Full Reservoir Config)
+
+You are a senior React.js + Tailwind CSS engineer.
+
+Enhance the existing Flex Table module in the Hydraulic Transient Analysis Software.
+Do NOT modify core calculation logic or break existing UI behavior.
+
+🎯 Enhancement Scope
+1. Show “NA” for Empty / Disabled Fields (All Filters)
+✅ Requirement
+
+When user switches filters:
+
+Reservoir
+Surge Tank
+Node
+Conduit
+Flow BC
+All
+
+If any field:
+
+Has no value (null, undefined, empty string)
+OR is disabled / not applicable for that element type
+
+👉 Display "NA" in Flex Table
+
+💡 Implementation Rules
+Add a utility:
+const formatValue = (value, isEditable) => {
+  if (!isEditable || value === null || value === undefined || value === "") {
+    return "NA";
+  }
+  return value;
+};
+Apply across all table cells
+Style:
+Grey text
+Italic (optional)
+Non-editable
+2. Flow Boundary → Q Schedule / T-H Pairs Expansion UI
+✅ Requirement
+
+In Flex Table (Flow BC tab):
+
+Show:
+First 2 Q Schedule / T-H pairs inline
+If more than 2:
+Show:
+🔽 “View More” OR dropdown arrow
+🔽 On Click Behavior
+Open:
+Small modal / popover / inline expandable row
+Show:
+Full list of pairs:
+Time
+Flow / Head values
+✏️ Editing Features
+Allow:
+Edit existing pairs
+Add new pair
+Delete pair
+🔄 Sync Requirement (CRITICAL)
+Changes in Flex Table popup → reflect in right-side panel
+Changes in right panel → reflect in Flex Table
+💡 UI Example Behavior
+
+Column:
+
+Q Schedule: [10, 20]  (+3 more...)
+Click → opens editor
+3. Reservoir → Show All Parameters + Pair Editing
+✅ Requirement
+
+In Reservoir filter:
+
+Show ALL:
+
+General parameters:
+Elevation
+BC Mode
+Head Schedule
+etc.
+AND:
+All T-H / H-Schedule pairs
+✏️ Editing Capability
+
+Inside Flex Table:
+
+Edit scalar values (inline)
+For pair-based data:
+Same UI as Flow BC:
+Show first 2 values
+“View More” → popup editor
+➕ Additional Features
+Add Pair
+Delete Pair
+Modify Pair values
+🔄 Sync Behavior
+Flex Table → Right Panel (instant)
+Right Panel → Flex Table (instant)
+4. Architecture Guidelines (IMPORTANT)
+🔁 Central State (MANDATORY)
+Use shared store (React Context / Zustand / Redux)
+No duplicate states
+🧩 Reusable Components
+
+Create:
+
+FlexTableCell
+NAValueRenderer
+PairsPreviewCell
+PairsEditorModal
+UnitConverter
+EditableCell
+🧠 Dynamic Schema
+Table columns should depend on:
+Element type
+Avoid hardcoding per filter
+5. UI/UX Guidelines
+Keep existing theme (blue/white)
+Table:
+Sticky header
+Scrollable body
+“NA”:
+Light grey text
+“View More”:
+Blue clickable text or icon
+Popup:
+Clean modal
+Small & centered
+6. Unit Conversion (SI / FPS)
+Apply conversion:
+In Flex Table
+In pair editor popup
+Keep internal base values unchanged
+⚠️ Constraints
+DO NOT break:
+Diagram behavior
+Output generation (.INP / .OUT)
+DO NOT change:
+Existing APIs
+Calculation engine
+✅ Expected Output
+Clean Flex Table with:
+“NA” handling
+Expandable pair fields
+Full Reservoir configuration
+Fully synchronized UI:
+Flex Table ↔ Right Panel
+Scalable and maintainable architecture

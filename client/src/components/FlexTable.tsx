@@ -1,10 +1,10 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useNetworkStore, type UnitSystem } from '@/lib/store';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { X, Filter, Check } from 'lucide-react';
+import { X, Filter, Check, Plus, Trash2 } from 'lucide-react';
 
 interface FlexTableProps {
   open: boolean;
@@ -78,8 +78,6 @@ function matchesFilter(row: UnifiedRow, filter: FilterKey): boolean {
   return row.subType === filter;
 }
 
-// ─── Column definitions per filter ───────────────────────────────────────────
-// Each entry: column key → used to drive header + cell rendering
 type ColKey = string;
 
 const COLS: Record<FilterKey, ColKey[]> = {
@@ -97,7 +95,25 @@ const COLS: Record<FilterKey, ColKey[]> = {
   flowBoundary:['rowNum','label','nodeNum','schedNum','qSchedPairs','comment'],
 };
 
+// ─── Pairs editor state ───────────────────────────────────────────────────────
+interface PairsEditorState {
+  open: boolean;
+  rowId: string;
+  rowKind: 'node' | 'edge';
+  pairsType: 'qSchedule' | 'hSchedule';
+  scheduleNumber?: number;
+}
+
 // ─── Cell components ──────────────────────────────────────────────────────────
+
+function NACell({ minW = 'min-w-[80px]' }: { minW?: string }) {
+  return (
+    <td className={cn('border-r border-slate-200 px-2 py-[7px] bg-slate-50/60', minW)}>
+      <span className="text-[10px] text-slate-300 italic select-none">NA</span>
+    </td>
+  );
+}
+
 interface EditableCellProps {
   value: string | number | undefined;
   type?: 'text' | 'number';
@@ -113,6 +129,13 @@ function EditableCell({ value, type = 'text', onChange, readOnly, dimmed, testId
   const [localVal, setLocalVal] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const display = value === undefined || value === null ? '' : String(value);
+
+  // Show NA for dimmed/read-only cells with no value
+  const isNA = dimmed && (display === '' || display === undefined);
+
+  if (isNA && !editing) {
+    return <NACell minW={minW} />;
+  }
 
   const startEdit = () => {
     if (readOnly || !onChange) return;
@@ -224,6 +247,167 @@ function SummaryCell({ count, label }: { count: number; label: string }) {
   );
 }
 
+// ─── Pairs Preview Cell ───────────────────────────────────────────────────────
+interface PairPreview {
+  time: number | string;
+  value: number | string;
+}
+
+function PairsPreviewCell({
+  pairs,
+  onEdit,
+  applicable = true,
+}: {
+  pairs: PairPreview[];
+  onEdit: () => void;
+  applicable?: boolean;
+}) {
+  if (!applicable) {
+    return <NACell minW="min-w-[130px]" />;
+  }
+
+  const preview = pairs.slice(0, 2);
+  const extra = pairs.length - 2;
+
+  return (
+    <td className="border-r border-slate-200 px-2 py-[6px] min-w-[130px]">
+      <div className="flex items-center gap-1 flex-wrap">
+        {pairs.length === 0 ? (
+          <button
+            className="text-[10px] text-blue-500 hover:text-blue-700 hover:underline font-medium"
+            onClick={e => { e.stopPropagation(); onEdit(); }}
+            data-testid="pairs-add"
+          >
+            + Add pairs
+          </button>
+        ) : (
+          <>
+            {preview.map((p, i) => (
+              <span
+                key={i}
+                className="text-[10px] text-slate-600 bg-slate-100 rounded px-1 py-0.5 whitespace-nowrap font-mono"
+              >
+                {p.time},{String(p.value).substring(0, 7)}
+              </span>
+            ))}
+            <button
+              className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline font-medium whitespace-nowrap"
+              onClick={e => { e.stopPropagation(); onEdit(); }}
+              data-testid="pairs-viewmore"
+            >
+              {extra > 0 ? `+${extra} more` : 'Edit'}
+            </button>
+          </>
+        )}
+      </div>
+    </td>
+  );
+}
+
+// ─── Pairs Editor Modal ───────────────────────────────────────────────────────
+interface PairRow {
+  time: string;
+  value: string;
+}
+
+interface PairsEditorModalProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  timeLabel: string;
+  valueLabel: string;
+  initialPairs: PairRow[];
+  onSave: (pairs: PairRow[]) => void;
+}
+
+function PairsEditorModal({
+  open, onClose, title, timeLabel, valueLabel, initialPairs, onSave,
+}: PairsEditorModalProps) {
+  const [rows, setRows] = useState<PairRow[]>([]);
+
+  useEffect(() => {
+    if (open) setRows(initialPairs.map(p => ({ ...p })));
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleChange = (idx: number, field: 'time' | 'value', val: string) => {
+    setRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r));
+  };
+  const handleAdd = () => setRows(prev => [...prev, { time: '0', value: '0' }]);
+  const handleDelete = (idx: number) => setRows(prev => prev.filter((_, i) => i !== idx));
+  const handleSave = () => { onSave(rows); onClose(); };
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent
+        className="max-w-sm w-full z-[300] flex flex-col gap-0 p-0 overflow-hidden"
+        data-testid="pairs-editor-modal"
+      >
+        <DialogHeader className="px-4 py-3 border-b bg-white">
+          <DialogTitle className="text-sm font-bold text-slate-800">{title}</DialogTitle>
+        </DialogHeader>
+
+        <div className="flex flex-col overflow-y-auto max-h-72 px-4 py-3 gap-1.5">
+          {/* Column headers */}
+          <div className="grid grid-cols-[1fr_1fr_28px] gap-2 text-[11px] font-semibold text-slate-500 pb-1">
+            <span>Time (T)</span>
+            <span>{valueLabel}</span>
+            <span />
+          </div>
+
+          {rows.length === 0 && (
+            <p className="text-[11px] text-slate-400 text-center py-6 italic">No pairs yet. Click "+ Add Point" below.</p>
+          )}
+
+          {rows.map((row, idx) => (
+            <div key={idx} className="grid grid-cols-[1fr_1fr_28px] gap-2 items-center">
+              <input
+                data-testid={`pair-time-${idx}`}
+                className="border border-slate-200 rounded px-2 h-7 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                type="number" step="any"
+                value={row.time}
+                onChange={e => handleChange(idx, 'time', e.target.value)}
+              />
+              <input
+                data-testid={`pair-value-${idx}`}
+                className="border border-slate-200 rounded px-2 h-7 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                type="number" step="any"
+                value={row.value}
+                onChange={e => handleChange(idx, 'value', e.target.value)}
+              />
+              <button
+                data-testid={`pair-delete-${idx}`}
+                className="text-red-400 hover:text-red-600 flex items-center justify-center"
+                onClick={() => handleDelete(idx)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50">
+          <Button
+            variant="outline" size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={handleAdd}
+            data-testid="pairs-add-point"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add Point
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onClose} data-testid="pairs-cancel">
+              Cancel
+            </Button>
+            <Button size="sm" className="h-7 text-xs bg-[#1a73e8] hover:bg-[#1557b0]" onClick={handleSave} data-testid="pairs-save">
+              Save
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Column header config ────────────────────────────────────────────────────
 function ColHeader({ col, unit }: { col: ColKey; unit: UnitSystem }) {
   const L = unit === 'FPS' ? 'ft' : 'm';
@@ -257,7 +441,7 @@ function ColHeader({ col, unit }: { col: ColKey; unit: UnitSystem }) {
 
 // ─── Row cell renderer ────────────────────────────────────────────────────────
 function RowCells({
-  col, row, idx, unit, changeEdge, changeNode, hSchedules,
+  col, row, idx, unit, changeEdge, changeNode, hSchedules, onOpenPairsEditor,
 }: {
   col: ColKey;
   row: UnifiedRow;
@@ -266,6 +450,7 @@ function RowCells({
   changeEdge: (f: string, v: string) => void;
   changeNode: (f: string, v: string) => void;
   hSchedules: any[];
+  onOpenPairsEditor: (rowId: string, rowKind: 'node' | 'edge', pairsType: 'qSchedule' | 'hSchedule', scheduleNumber?: number) => void;
 }) {
   const d = row.data;
   const isEdge = row.kind === 'edge';
@@ -274,17 +459,14 @@ function RowCells({
   const isRes = row.subType === 'reservoir';
   const isSurge = row.subType === 'surgeTank';
   const isFlow = row.subType === 'flowBoundary';
-  const isJunc = row.subType === 'junction';
 
   const change = isEdge ? changeEdge : changeNode;
   const fmt = (v: any) => (v === undefined || v === null || v === '') ? '' : String(parseFloat(Number(v).toFixed(8)));
 
-  const thPairCount = (() => {
-    const sNum = d.hScheduleNumber || 1;
-    const sched = hSchedules.find((s: any) => s.number === sNum);
-    return sched?.points?.length ?? 0;
-  })();
-  const qPairCount = (d.schedulePoints as any[] || []).length;
+  const hSchedNum = d.hScheduleNumber || 1;
+  const hSched = hSchedules.find((s: any) => s.number === hSchedNum);
+  const thPairs: PairPreview[] = (hSched?.points || []).map((p: any) => ({ time: p.time, value: p.head }));
+  const qPairs: PairPreview[] = (d.schedulePoints as any[] || []).map((p: any) => ({ time: p.time, value: p.flow }));
   const shapePairCount = (d.shape as any[] || []).length;
 
   switch (col) {
@@ -400,9 +582,17 @@ function RowCells({
         readOnly={!isRes || d.mode !== 'schedule'} dimmed={!isRes || d.mode !== 'schedule'}
         onChange={v => changeNode('hScheduleNumber', v)} testId={`cell-hschednum-${row.id}`} />
     );
-    case 'thPairs': return (
-      <SummaryCell key={col} count={isRes ? thPairCount : 0} label="pair" />
-    );
+    case 'thPairs': {
+      const applicable = isRes && d.mode === 'schedule';
+      return (
+        <PairsPreviewCell
+          key={col}
+          pairs={applicable ? thPairs : []}
+          applicable={applicable}
+          onEdit={() => onOpenPairsEditor(row.id, row.kind, 'hSchedule', hSchedNum)}
+        />
+      );
+    }
     case 'stType': return (
       <SelectCell key={col} value={d.type_st || 'SIMPLE'}
         options={[{label:'SIMPLE',value:'SIMPLE'},{label:'DIFFERENTIAL',value:'DIFFERENTIAL'},{label:'AIRTANK',value:'AIRTANK'}]}
@@ -447,7 +637,12 @@ function RowCells({
         onChange={v => changeNode('scheduleNumber', v)} testId={`cell-schednum-${row.id}`} />
     );
     case 'qSchedPairs': return (
-      <SummaryCell key={col} count={isFlow ? qPairCount : 0} label="point" />
+      <PairsPreviewCell
+        key={col}
+        pairs={isFlow ? qPairs : []}
+        applicable={isFlow}
+        onEdit={() => onOpenPairsEditor(row.id, row.kind, 'qSchedule')}
+      />
     );
     case 'comment': return (
       <EditableCell key={col} value={d.comment ?? ''} onChange={v => change('comment', v)}
@@ -460,7 +655,7 @@ function RowCells({
 // ─── Main table ───────────────────────────────────────────────────────────────
 function UnifiedTable({
   rows, filter, unit, hSchedules,
-  onChangeEdge, onChangeNode, onSelectEdge, onSelectNode,
+  onChangeEdge, onChangeNode, onSelectEdge, onSelectNode, onOpenPairsEditor,
 }: {
   rows: UnifiedRow[];
   filter: FilterKey;
@@ -470,6 +665,7 @@ function UnifiedTable({
   onChangeNode: (id: string, field: string, val: string, data: any) => void;
   onSelectEdge: (id: string) => void;
   onSelectNode: (id: string) => void;
+  onOpenPairsEditor: (rowId: string, rowKind: 'node' | 'edge', pairsType: 'qSchedule' | 'hSchedule', scheduleNumber?: number) => void;
 }) {
   const cols = COLS[filter] ?? COLS.all;
 
@@ -507,7 +703,9 @@ function UnifiedTable({
                 {cols.map(col => (
                   <RowCells
                     key={col} col={col} row={row} idx={idx} unit={unit}
-                    changeEdge={changeEdge} changeNode={changeNode} hSchedules={hSchedules}
+                    changeEdge={changeEdge} changeNode={changeNode}
+                    hSchedules={hSchedules}
+                    onOpenPairsEditor={onOpenPairsEditor}
                   />
                 ))}
               </tr>
@@ -521,8 +719,13 @@ function UnifiedTable({
 
 // ─── FlexTable (exported) ─────────────────────────────────────────────────────
 export function FlexTable({ open, onClose }: FlexTableProps) {
-  const { nodes, edges, globalUnit, setGlobalUnit, updateEdgeData, updateNodeData, selectElement, hSchedules } = useNetworkStore();
+  const {
+    nodes, edges, globalUnit, setGlobalUnit,
+    updateEdgeData, updateNodeData, selectElement,
+    hSchedules, updateHSchedule, addHSchedule,
+  } = useNetworkStore();
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [pairsEditor, setPairsEditor] = useState<PairsEditorState | null>(null);
 
   const allRows = useMemo<UnifiedRow[]>(() => {
     const nodeRows = new Map(nodes.map(n => [n.id, {
@@ -542,7 +745,6 @@ export function FlexTable({ open, onClose }: FlexTableProps) {
     const pushNode = (r: UnifiedRow) => { if (!visited.has(r.id)) { visited.add(r.id); result.push(r); } };
     const pushEdge = (r: UnifiedRow) => { if (!visited.has(r.id)) { visited.add(r.id); result.push(r); } };
 
-    // BFS from reservoir nodes following outgoing edges
     const reservoirs = [...nodeRows.values()].filter(r => r.subType === 'reservoir');
     for (const res of reservoirs) {
       pushNode(res);
@@ -551,7 +753,6 @@ export function FlexTable({ open, onClose }: FlexTableProps) {
         const tr = nodeRows.get(e.target); if (tr) pushNode(tr);
       }
     }
-    // Remaining edges, then remaining nodes
     for (const e of edgeRows.values()) if (!visited.has(e.id)) { visited.add(e.id); result.push(e); }
     for (const n of nodeRows.values()) if (!visited.has(n.id)) { visited.add(n.id); result.push(n); }
 
@@ -617,91 +818,157 @@ export function FlexTable({ open, onClose }: FlexTableProps) {
   const handleSelectEdge = useCallback((id: string) => selectElement(id, 'edge'), [selectElement]);
   const handleSelectNode = useCallback((id: string) => selectElement(id, 'node'), [selectElement]);
 
+  const handleOpenPairsEditor = useCallback((
+    rowId: string,
+    rowKind: 'node' | 'edge',
+    pairsType: 'qSchedule' | 'hSchedule',
+    scheduleNumber?: number
+  ) => {
+    setPairsEditor({ open: true, rowId, rowKind, pairsType, scheduleNumber });
+  }, []);
+
+  // Build the initial pairs for the editor based on editor state
+  const editorInitialPairs = useMemo((): PairRow[] => {
+    if (!pairsEditor) return [];
+    if (pairsEditor.pairsType === 'qSchedule') {
+      const row = allRows.find(r => r.id === pairsEditor.rowId);
+      const pts = (row?.data?.schedulePoints as any[]) || [];
+      return pts.map((p: any) => ({ time: String(p.time ?? 0), value: String(p.flow ?? 0) }));
+    } else {
+      const schedNum = pairsEditor.scheduleNumber || 1;
+      const sched = hSchedules?.find((s: any) => s.number === schedNum);
+      const pts = sched?.points || [];
+      return pts.map((p: any) => ({ time: String(p.time ?? 0), value: String(p.head ?? 0) }));
+    }
+  }, [pairsEditor, allRows, hSchedules]);
+
+  const handleSavePairs = useCallback((rows: PairRow[]) => {
+    if (!pairsEditor) return;
+    if (pairsEditor.pairsType === 'qSchedule') {
+      const schedulePoints = rows.map(r => ({
+        time: parseFloat(r.time) || 0,
+        flow: parseFloat(r.value) || 0,
+      }));
+      updateNodeData(pairsEditor.rowId, { schedulePoints });
+    } else {
+      const schedNum = pairsEditor.scheduleNumber || 1;
+      const points = rows.map(r => ({
+        time: parseFloat(r.time) || 0,
+        head: parseFloat(r.value) || 0,
+      }));
+      // Ensure the schedule exists, then update
+      addHSchedule(schedNum);
+      updateHSchedule(schedNum, points);
+    }
+  }, [pairsEditor, updateNodeData, updateHSchedule, addHSchedule]);
+
   const visibleChips = FILTER_CHIPS.filter(c => counts[c.key as keyof typeof counts] > 0 || c.key === 'all');
 
+  // Build editor title/labels
+  const editorTitle = pairsEditor?.pairsType === 'qSchedule' ? 'Edit Q Schedule Points' : 'Edit T/H Pairs';
+  const editorValueLabel = pairsEditor?.pairsType === 'qSchedule'
+    ? `Flow (Q) (${globalUnit === 'FPS' ? 'ft³/s' : 'm³/s'})`
+    : `Head (H) (${globalUnit === 'FPS' ? 'ft' : 'm'})`;
+
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent
-        className="max-w-[96vw] w-[96vw] h-[92vh] flex flex-col p-0 gap-0 overflow-hidden"
-        data-testid="flextable-dialog"
-        hideCloseButton
-      >
-        {/* ── Header ── */}
-        <DialogHeader className="px-5 py-2.5 border-b bg-white flex-none shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <DialogTitle className="text-sm font-bold text-slate-800">Flex Table</DialogTitle>
-              <span className="text-xs text-slate-400">
-                {nodes.length} node{nodes.length !== 1 ? 's' : ''} · {edges.length} pipe{edges.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center border border-slate-200 rounded overflow-hidden text-xs h-7">
-                <button
-                  data-testid="flextable-unit-si"
-                  className={cn('px-3 h-full font-semibold transition-colors', globalUnit === 'SI' ? 'bg-[#1a73e8] text-white' : 'text-slate-600 hover:bg-slate-50')}
-                  onClick={() => setGlobalUnit('SI')}
-                >SI</button>
-                <button
-                  data-testid="flextable-unit-fps"
-                  className={cn('px-3 h-full font-semibold transition-colors border-l border-slate-200', globalUnit === 'FPS' ? 'bg-[#1a73e8] text-white' : 'text-slate-600 hover:bg-slate-50')}
-                  onClick={() => setGlobalUnit('FPS')}
-                >FPS</button>
-              </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={onClose} data-testid="flextable-close">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </DialogHeader>
-
-        {/* ── Filter chips ── */}
-        <div className="flex items-center gap-1.5 px-5 py-2 border-b bg-slate-50 flex-none flex-wrap">
-          <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0 mr-1" />
-          {visibleChips.map(chip => {
-            const active = activeFilter === chip.key;
-            return (
-              <button
-                key={chip.key}
-                data-testid={`filter-chip-${chip.key}`}
-                onClick={() => setActiveFilter(chip.key)}
-                className={cn(
-                  'inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all',
-                  active ? 'bg-[#1a73e8] text-white border-[#1a73e8]' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-                )}
-              >
-                {chip.label}
-                <span className={cn(
-                  'inline-flex items-center justify-center rounded-full text-[9px] font-bold min-w-[16px] h-4 px-1',
-                  active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
-                )}>
-                  {counts[chip.key as keyof typeof counts]}
+    <>
+      <Dialog open={open} onOpenChange={v => !v && onClose()}>
+        <DialogContent
+          className="max-w-[96vw] w-[96vw] h-[92vh] flex flex-col p-0 gap-0 overflow-hidden"
+          data-testid="flextable-dialog"
+          hideCloseButton
+        >
+          {/* ── Header ── */}
+          <DialogHeader className="px-5 py-2.5 border-b bg-white flex-none shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <DialogTitle className="text-sm font-bold text-slate-800">Flex Table</DialogTitle>
+                <span className="text-xs text-slate-400">
+                  {nodes.length} node{nodes.length !== 1 ? 's' : ''} · {edges.length} pipe{edges.length !== 1 ? 's' : ''}
                 </span>
-              </button>
-            );
-          })}
-          {activeFilter !== 'all' && (
-            <button className="text-[11px] text-slate-400 hover:text-slate-600 ml-1 underline" onClick={() => setActiveFilter('all')}>
-              Clear
-            </button>
-          )}
-        </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center border border-slate-200 rounded overflow-hidden text-xs h-7">
+                  <button
+                    data-testid="flextable-unit-si"
+                    className={cn('px-3 h-full font-semibold transition-colors', globalUnit === 'SI' ? 'bg-[#1a73e8] text-white' : 'text-slate-600 hover:bg-slate-50')}
+                    onClick={() => setGlobalUnit('SI')}
+                  >SI</button>
+                  <button
+                    data-testid="flextable-unit-fps"
+                    className={cn('px-3 h-full font-semibold transition-colors border-l border-slate-200', globalUnit === 'FPS' ? 'bg-[#1a73e8] text-white' : 'text-slate-600 hover:bg-slate-50')}
+                    onClick={() => setGlobalUnit('FPS')}
+                  >FPS</button>
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={onClose} data-testid="flextable-close">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
 
-        {/* ── Table ── */}
-        <div className="flex-1 overflow-hidden flex flex-col px-4 py-3 gap-2 bg-slate-50/70">
-          <UnifiedTable
-            rows={filteredRows} filter={activeFilter} unit={globalUnit} hSchedules={hSchedules ?? []}
-            onChangeEdge={handleChangeEdge} onChangeNode={handleChangeNode}
-            onSelectEdge={handleSelectEdge} onSelectNode={handleSelectNode}
-          />
-          <p className="text-[10px] text-slate-400 flex-none">
-            Showing {filteredRows.length} of {allRows.length} elements ·
-            Click any white cell to edit · Dimmed cells are read-only for that element type ·
-            Array fields (T/H pairs, shape, Q-schedule) — edit via the Properties Panel ·
-            SI/FPS toggle applies globally
-          </p>
-        </div>
-      </DialogContent>
-    </Dialog>
+          {/* ── Filter chips ── */}
+          <div className="flex items-center gap-1.5 px-5 py-2 border-b bg-slate-50 flex-none flex-wrap">
+            <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0 mr-1" />
+            {visibleChips.map(chip => {
+              const active = activeFilter === chip.key;
+              return (
+                <button
+                  key={chip.key}
+                  data-testid={`filter-chip-${chip.key}`}
+                  onClick={() => setActiveFilter(chip.key)}
+                  className={cn(
+                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all',
+                    active ? 'bg-[#1a73e8] text-white border-[#1a73e8]' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                  )}
+                >
+                  {chip.label}
+                  <span className={cn(
+                    'inline-flex items-center justify-center rounded-full text-[9px] font-bold min-w-[16px] h-4 px-1',
+                    active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                  )}>
+                    {counts[chip.key as keyof typeof counts]}
+                  </span>
+                </button>
+              );
+            })}
+            {activeFilter !== 'all' && (
+              <button className="text-[11px] text-slate-400 hover:text-slate-600 ml-1 underline" onClick={() => setActiveFilter('all')}>
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* ── Table ── */}
+          <div className="flex-1 overflow-hidden flex flex-col px-4 py-3 gap-2 bg-slate-50/70">
+            <UnifiedTable
+              rows={filteredRows} filter={activeFilter} unit={globalUnit} hSchedules={hSchedules ?? []}
+              onChangeEdge={handleChangeEdge} onChangeNode={handleChangeNode}
+              onSelectEdge={handleSelectEdge} onSelectNode={handleSelectNode}
+              onOpenPairsEditor={handleOpenPairsEditor}
+            />
+            <p className="text-[10px] text-slate-400 flex-none">
+              Showing {filteredRows.length} of {allRows.length} elements ·
+              Click any white cell to edit · Dimmed cells are read-only for that element type ·
+              Array fields (T/H pairs, shape, Q-schedule) — edit via the Properties Panel ·
+              SI/FPS toggle applies globally
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pairs editor — rendered outside the main Dialog to avoid stacking issues */}
+      {pairsEditor && (
+        <PairsEditorModal
+          open={pairsEditor.open}
+          onClose={() => setPairsEditor(null)}
+          title={editorTitle}
+          timeLabel="Time (T)"
+          valueLabel={editorValueLabel}
+          initialPairs={editorInitialPairs}
+          onSave={handleSavePairs}
+        />
+      )}
+    </>
   );
 }
