@@ -515,11 +515,21 @@ function RowCells({
         readOnly={!isEdge && !isSurge} dimmed={!isEdge && !isSurge}
         onChange={v => change('friction', v)} testId={`cell-friction-${row.id}`} />
     );
-    case 'manningsN': return (
-      <EditableCell key={col} value={d.manningsN ?? ''} type="number"
-        readOnly={!isConduit} dimmed={!isConduit}
-        onChange={v => changeEdge('manningsN', v)} testId={`cell-manningsn-${row.id}`} />
-    );
+    case 'manningsN': {
+      const mN = (() => {
+        if (d.manningsN != null && d.manningsN !== '') return String(d.manningsN);
+        const f = parseFloat(d.friction) || 0;
+        const diam = parseFloat(d.diameter) || 0;
+        const K = unit === 'FPS' ? 185 : 124.58;
+        if (f > 0 && diam > 0) return parseFloat(Math.sqrt((f * Math.pow(diam, 1 / 3)) / K).toFixed(6)).toString();
+        return '';
+      })();
+      return (
+        <EditableCell key={col} value={mN} type="number"
+          readOnly={!isConduit} dimmed={!isConduit}
+          onChange={v => changeEdge('manningsN', v)} testId={`cell-manningsn-${row.id}`} />
+      );
+    }
     case 'segments': return (
       <EditableCell key={col} value={isEdge && !isDummy ? fmt(d.numSegments) : ''} type="number"
         readOnly={!isEdge || isDummy} dimmed={!isEdge || isDummy}
@@ -798,6 +808,15 @@ export function FlexTable({ open, onClose }: FlexTableProps) {
       const cache = (currentData?._unitCache as any) || {};
       const cu = (currentData?.unit as UnitSystem) || globalUnit;
       update._unitCache = buildCacheUpdate(cache, cu, field, val);
+    }
+    // When Manning's n is edited, recompute friction to keep both in sync
+    if (field === 'manningsN') {
+      const n = parseFloat(rawStr) || 0;
+      const diam = parseFloat(currentData?.diameter) || 0;
+      const K = globalUnit === 'SI' ? 124.58 : 185;
+      if (n > 0 && diam > 0) {
+        update.friction = parseFloat(((K * n * n) / Math.pow(diam, 1 / 3)).toFixed(6));
+      }
     }
     updateEdgeData(id, update);
   }, [globalUnit, updateEdgeData]);
