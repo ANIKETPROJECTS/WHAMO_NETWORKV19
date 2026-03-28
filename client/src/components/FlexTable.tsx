@@ -109,7 +109,7 @@ interface PairsEditorState {
 function NACell({ minW = 'min-w-[80px]' }: { minW?: string }) {
   return (
     <td className={cn('border-r border-slate-200 px-2 py-[7px] bg-slate-50/60', minW)}>
-      <span className="text-[10px] text-slate-300 italic select-none">NA</span>
+      <span className="text-xs text-slate-700 select-none">NA</span>
     </td>
   );
 }
