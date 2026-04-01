@@ -35,7 +35,7 @@ function buildCacheUpdate(
 
 type FilterKey =
   | 'all' | 'pipe' | 'conduit' | 'dummy'
-  | 'node' | 'reservoir' | 'junction' | 'surgeTank' | 'flowBoundary';
+  | 'node' | 'reservoir' | 'junction' | 'surgeTank' | 'flowBoundary' | 'pump' | 'checkValve';
 
 interface UnifiedRow {
   id: string;
@@ -47,6 +47,7 @@ interface UnifiedRow {
 const NODE_TYPE_LABEL: Record<string, string> = {
   reservoir: 'Reservoir', node: 'Node', junction: 'Junction',
   surgeTank: 'Surge Tank', flowBoundary: 'Flow BC',
+  pump: 'Pump', checkValve: 'Check Valve',
   conduit: 'Conduit', dummy: 'Dummy Pipe',
 };
 const TYPE_BADGE: Record<string, string> = {
@@ -55,20 +56,24 @@ const TYPE_BADGE: Record<string, string> = {
   junction:     'bg-red-100 text-red-700 border-red-200',
   surgeTank:    'bg-orange-100 text-orange-700 border-orange-200',
   flowBoundary: 'bg-green-100 text-green-700 border-green-200',
+  pump:         'bg-orange-100 text-orange-600 border-orange-300',
+  checkValve:   'bg-violet-100 text-violet-700 border-violet-200',
   conduit:      'bg-indigo-100 text-indigo-700 border-indigo-200',
   dummy:        'bg-purple-100 text-purple-700 border-purple-200',
 };
 
 const FILTER_CHIPS: { key: FilterKey; label: string }[] = [
-  { key: 'all',         label: 'All'        },
-  { key: 'pipe',        label: 'Pipe'       },
-  { key: 'conduit',     label: 'Conduit'    },
-  { key: 'dummy',       label: 'Dummy Pipe' },
-  { key: 'node',        label: 'Node'       },
-  { key: 'reservoir',   label: 'Reservoir'  },
-  { key: 'junction',    label: 'Junction'   },
-  { key: 'surgeTank',   label: 'Surge Tank' },
-  { key: 'flowBoundary',label: 'Flow BC'    },
+  { key: 'all',         label: 'All'          },
+  { key: 'pipe',        label: 'Pipe'         },
+  { key: 'conduit',     label: 'Conduit'      },
+  { key: 'dummy',       label: 'Dummy Pipe'   },
+  { key: 'node',        label: 'Node'         },
+  { key: 'reservoir',   label: 'Reservoir'    },
+  { key: 'junction',    label: 'Junction'     },
+  { key: 'surgeTank',   label: 'Surge Tank'   },
+  { key: 'flowBoundary',label: 'Flow BC'      },
+  { key: 'pump',        label: 'Pump'         },
+  { key: 'checkValve',  label: 'Check Valve'  },
 ];
 
 function matchesFilter(row: UnifiedRow, filter: FilterKey): boolean {
@@ -93,6 +98,8 @@ const COLS: Record<FilterKey, ColKey[]> = {
                  'initWaterLevel','riserDiam','riserTop','hasShape','diameter',
                  'celerity','friction','hasAddedLoss','cplus','cminus','shapePairs','comment'],
   flowBoundary:['rowNum','unitToggle','label','nodeNum','schedNum','qSchedPairs','comment'],
+  pump:        ['rowNum','unitToggle','label','nodeNum','elevation','pumpStatus','pumpHead','pumpFlow','speedFactor','comment'],
+  checkValve:  ['rowNum','unitToggle','label','nodeNum','elevation','valveStatus','closureLoss','comment'],
 };
 
 // ─── Pairs editor state ───────────────────────────────────────────────────────
@@ -468,6 +475,8 @@ function ColHeader({ col, unit }: { col: ColKey; unit: UnitSystem }) {
     initWaterLevel: `HTANK (${L})`, riserDiam: `Riser Diam (${L})`,
     riserTop: `Riser Top (${L})`, hasShape: 'Use SHAPE', shapePairs: 'Shape Pairs',
     schedNum: 'Q Sched #', qSchedPairs: 'Q Schedule',
+    pumpStatus: 'Status', pumpHead: `Design Head (${L})`, pumpFlow: `Design Flow`, speedFactor: 'Speed Factor',
+    valveStatus: 'Status', closureLoss: 'Closure Loss (CLOS)',
     comment: 'Comment',
   };
   return (
@@ -502,6 +511,8 @@ function RowCells({
   const isRes = row.subType === 'reservoir';
   const isSurge = row.subType === 'surgeTank';
   const isFlow = row.subType === 'flowBoundary';
+  const isPump = row.subType === 'pump';
+  const isCheckValve = row.subType === 'checkValve';
 
   // Each row uses its own unit (per-element override) or falls back to global
   const rowUnit: UnitSystem = (d.unit as UnitSystem) || unit;
@@ -731,6 +742,36 @@ function RowCells({
         onEdit={() => onOpenPairsEditor(row.id, row.kind, 'qSchedule')}
       />
     );
+    case 'pumpStatus': return (
+      <SelectCell key={col} value={d.pumpStatus || 'ACTIVE'}
+        options={[{label:'ACTIVE',value:'ACTIVE'},{label:'INACTIVE',value:'INACTIVE'}]}
+        dimmed={!isPump} onChange={isPump ? v => changeNode('pumpStatus', v) : undefined} testId={`cell-pumpstatus-${row.id}`} />
+    );
+    case 'pumpHead': return (
+      <EditableCell key={col} value={isPump ? fmt(d.pumpHead) : ''} type="number"
+        readOnly={!isPump} dimmed={!isPump}
+        onChange={v => changeNode('pumpHead', v)} testId={`cell-pumphead-${row.id}`} />
+    );
+    case 'pumpFlow': return (
+      <EditableCell key={col} value={isPump ? fmt(d.pumpFlow) : ''} type="number"
+        readOnly={!isPump} dimmed={!isPump}
+        onChange={v => changeNode('pumpFlow', v)} testId={`cell-pumpflow-${row.id}`} />
+    );
+    case 'speedFactor': return (
+      <EditableCell key={col} value={isPump ? fmt(d.speedFactor) : ''} type="number"
+        readOnly={!isPump} dimmed={!isPump}
+        onChange={v => changeNode('speedFactor', v)} testId={`cell-speedfactor-${row.id}`} />
+    );
+    case 'valveStatus': return (
+      <SelectCell key={col} value={d.valveStatus || 'OPEN'}
+        options={[{label:'OPEN',value:'OPEN'},{label:'CLOSED',value:'CLOSED'}]}
+        dimmed={!isCheckValve} onChange={isCheckValve ? v => changeNode('valveStatus', v) : undefined} testId={`cell-valvestatus-${row.id}`} />
+    );
+    case 'closureLoss': return (
+      <EditableCell key={col} value={isCheckValve ? fmt(d.closureLoss) : ''} type="number"
+        readOnly={!isCheckValve} dimmed={!isCheckValve}
+        onChange={v => changeNode('closureLoss', v)} testId={`cell-closureloss-${row.id}`} />
+    );
     case 'comment': return (
       <EditableCell key={col} value={d.comment ?? ''} onChange={v => change('comment', v)}
         testId={`cell-comment-${row.id}`} minW="min-w-[160px]" />
@@ -872,6 +913,8 @@ export function FlexTable({ open, onClose }: FlexTableProps) {
     junction:     allRows.filter(r => r.subType === 'junction').length,
     surgeTank:    allRows.filter(r => r.subType === 'surgeTank').length,
     flowBoundary: allRows.filter(r => r.subType === 'flowBoundary').length,
+    pump:         allRows.filter(r => r.subType === 'pump').length,
+    checkValve:   allRows.filter(r => r.subType === 'checkValve').length,
   }), [allRows]);
 
   const handleChangeEdge = useCallback((id: string, field: string, rawStr: string, currentData: any) => {
@@ -905,7 +948,7 @@ export function FlexTable({ open, onClose }: FlexTableProps) {
   }, [globalUnit, updateEdgeData]);
 
   const handleChangeNode = useCallback((id: string, field: string, rawStr: string, currentData: any) => {
-    const textFields = new Set(['label', 'comment', 'mode', 'type', 'type_st']);
+    const textFields = new Set(['label', 'comment', 'mode', 'type', 'type_st', 'pumpStatus', 'valveStatus']);
     const boolFields = new Set(['hasAddedLoss', 'hasShape']);
     const isText = textFields.has(field);
     const isBool = boolFields.has(field);

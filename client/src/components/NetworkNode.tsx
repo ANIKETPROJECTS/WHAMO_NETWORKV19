@@ -137,6 +137,73 @@ export const SurgeTankNode = memo(({ id, data, selected }: NodeProps) => {
   );
 });
 
+// Pump Node
+export const PumpNode = memo(({ id, data, selected }: NodeProps) => {
+  const node = useNetworkStore(state => state.nodes.find(n => n.id === id));
+  const displayData = node ? node.data : data;
+
+  return (
+    <TooltipWrapper content={<DataList data={displayData} title="Pump Properties" />}>
+      <div className={clsx(
+        "w-[52px] h-[52px] transition-all group relative flex items-center justify-center",
+      )}>
+        <Handle type="target" id="t-top" position={Position.Top} className={clsx(HandleStyle, "!bg-orange-500")} />
+        <Handle type="source" id="s-top" position={Position.Top} className={clsx(HandleStyle, "!bg-orange-500")} />
+        <Handle type="target" id="t-bottom" position={Position.Bottom} className={clsx(HandleStyle, "!bg-orange-500")} />
+        <Handle type="source" id="s-bottom" position={Position.Bottom} className={clsx(HandleStyle, "!bg-orange-500")} />
+        <Handle type="target" id="t-left" position={Position.Left} className={clsx(HandleStyle, "!bg-orange-500")} />
+        <Handle type="source" id="s-left" position={Position.Left} className={clsx(HandleStyle, "!bg-orange-500")} />
+        <Handle type="target" id="t-right" position={Position.Right} className={clsx(HandleStyle, "!bg-orange-500")} />
+        <Handle type="source" id="s-right" position={Position.Right} className={clsx(HandleStyle, "!bg-orange-500")} />
+
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"
+          className={clsx("transition-all", selected ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.7)]" : "")}>
+          <circle cx="26" cy="26" r="23" fill="#fff7ed" stroke={selected ? "#ea580c" : "#f97316"} strokeWidth={selected ? "2.5" : "2"}/>
+          <polygon points="19,16 19,36 38,26" fill="#f97316"/>
+        </svg>
+
+        <div className="absolute -top-6 text-[10px] font-bold text-orange-900 bg-white/80 px-1 rounded border border-orange-200 shadow-sm whitespace-nowrap">
+          {data.label as React.ReactNode}
+        </div>
+      </div>
+    </TooltipWrapper>
+  );
+});
+
+// Check Valve Node
+export const CheckValveNode = memo(({ id, data, selected }: NodeProps) => {
+  const node = useNetworkStore(state => state.nodes.find(n => n.id === id));
+  const displayData = node ? node.data : data;
+
+  return (
+    <TooltipWrapper content={<DataList data={displayData} title="Check Valve Properties" />}>
+      <div className={clsx(
+        "w-[52px] h-[52px] transition-all group relative flex items-center justify-center",
+      )}>
+        <Handle type="target" id="t-top" position={Position.Top} className={clsx(HandleStyle, "!bg-violet-500")} />
+        <Handle type="source" id="s-top" position={Position.Top} className={clsx(HandleStyle, "!bg-violet-500")} />
+        <Handle type="target" id="t-bottom" position={Position.Bottom} className={clsx(HandleStyle, "!bg-violet-500")} />
+        <Handle type="source" id="s-bottom" position={Position.Bottom} className={clsx(HandleStyle, "!bg-violet-500")} />
+        <Handle type="target" id="t-left" position={Position.Left} className={clsx(HandleStyle, "!bg-violet-500")} />
+        <Handle type="source" id="s-left" position={Position.Left} className={clsx(HandleStyle, "!bg-violet-500")} />
+        <Handle type="target" id="t-right" position={Position.Right} className={clsx(HandleStyle, "!bg-violet-500")} />
+        <Handle type="source" id="s-right" position={Position.Right} className={clsx(HandleStyle, "!bg-violet-500")} />
+
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"
+          className={clsx("transition-all", selected ? "drop-shadow-[0_0_8px_rgba(139,92,246,0.7)]" : "")}>
+          <circle cx="26" cy="26" r="23" fill="#f5f3ff" stroke={selected ? "#7c3aed" : "#8b5cf6"} strokeWidth={selected ? "2.5" : "2"}/>
+          <polygon points="14,16 14,36 32,26" fill="#8b5cf6"/>
+          <line x1="34" y1="15" x2="34" y2="37" stroke="#8b5cf6" strokeWidth="3" strokeLinecap="round"/>
+        </svg>
+
+        <div className="absolute -top-6 text-[10px] font-bold text-violet-900 bg-white/80 px-1 rounded border border-violet-200 shadow-sm whitespace-nowrap">
+          {data.label as React.ReactNode}
+        </div>
+      </div>
+    </TooltipWrapper>
+  );
+});
+
 // Flow Boundary
 export const FlowBoundaryNode = memo(({ id, data, selected }: NodeProps) => {
   const node = useNetworkStore(state => state.nodes.find(n => n.id === id));

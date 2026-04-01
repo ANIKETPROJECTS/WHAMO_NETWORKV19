@@ -23,7 +23,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { cn } from '@/lib/utils';
 import { useNetworkStore, WhamoNode, WhamoEdge } from '@/lib/store';
-import { ReservoirNode, SimpleNode, JunctionNode, SurgeTankNode, FlowBoundaryNode } from '@/components/NetworkNode';
+import { ReservoirNode, SimpleNode, JunctionNode, SurgeTankNode, FlowBoundaryNode, PumpNode, CheckValveNode } from '@/components/NetworkNode';
 import { ConnectionEdge } from '@/components/ConnectionEdge';
 import { PropertiesPanel } from '@/components/PropertiesPanel';
 import { NodeSelectionPanel } from '@/components/NodeSelectionPanel';
@@ -68,6 +68,8 @@ const nodeTypes = {
   junction: JunctionNode,
   surgeTank: SurgeTankNode,
   flowBoundary: FlowBoundaryNode,
+  pump: PumpNode,
+  checkValve: CheckValveNode,
 };
 
 const edgeTypes = {

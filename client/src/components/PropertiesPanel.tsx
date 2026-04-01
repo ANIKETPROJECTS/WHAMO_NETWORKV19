@@ -281,7 +281,7 @@ export function PropertiesPanel() {
             </div>
           )}
 
-          {isNode && (element.data?.type === 'node' || element.data?.type === 'junction' || element.data?.type === 'reservoir' || element.data?.type === 'surgeTank' || element.data?.type === 'flowBoundary' || element.data?.type_st) && (
+          {isNode && (element.data?.type === 'node' || element.data?.type === 'junction' || element.data?.type === 'reservoir' || element.data?.type === 'surgeTank' || element.data?.type === 'flowBoundary' || element.data?.type === 'pump' || element.data?.type === 'checkValve' || element.data?.type_st) && (
             <>
               <div className="grid gap-2">
                 <Label htmlFor="nodeNum">Node Number</Label>
@@ -451,6 +451,88 @@ export function PropertiesPanel() {
                   </div>
                 </div>
               )}
+              {element.data?.type === 'pump' && (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="pumpStatus">Pump Status</Label>
+                    <Select
+                      value={element.data?.pumpStatus || 'ACTIVE'}
+                      onValueChange={(v) => handleChange('pumpStatus', v)}
+                    >
+                      <SelectTrigger id="pumpStatus">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                        <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="pumpHead">Design Head ({currentUnit === 'SI' ? 'm' : 'ft'})</Label>
+                    <Input
+                      id="pumpHead"
+                      type="number"
+                      step="any"
+                      value={element.data?.pumpHead !== undefined ? parseFloat(Number(element.data.pumpHead).toFixed(6)) : 50}
+                      onChange={(e) => handleChange('pumpHead', e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="pumpFlow">Design Flow ({currentUnit === 'SI' ? 'm³/s' : 'ft³/s'}) (negative = reverse)</Label>
+                    <Input
+                      id="pumpFlow"
+                      type="number"
+                      step="any"
+                      value={element.data?.pumpFlow !== undefined ? parseFloat(Number(element.data.pumpFlow).toFixed(6)) : 10}
+                      onChange={(e) => handleChange('pumpFlow', e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="speedFactor">Speed Factor (SPEED)</Label>
+                    <Input
+                      id="speedFactor"
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={element.data?.speedFactor !== undefined ? parseFloat(Number(element.data.speedFactor).toFixed(6)) : 1.0}
+                      onChange={(e) => handleChange('speedFactor', e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {element.data?.type === 'checkValve' && (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="valveStatus">Valve Status</Label>
+                    <Select
+                      value={element.data?.valveStatus || 'OPEN'}
+                      onValueChange={(v) => handleChange('valveStatus', v)}
+                    >
+                      <SelectTrigger id="valveStatus">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OPEN">OPEN</SelectItem>
+                        <SelectItem value="CLOSED">CLOSED</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="closureLoss">Closure Loss Coefficient (CLOS)</Label>
+                    <Input
+                      id="closureLoss"
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 1e10"
+                      value={element.data?.closureLoss !== undefined ? element.data.closureLoss : 1e10}
+                      onChange={(e) => handleChange('closureLoss', e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
               {element.data?.type === 'flowBoundary' && (
                 <>
                   <div className="grid gap-2">

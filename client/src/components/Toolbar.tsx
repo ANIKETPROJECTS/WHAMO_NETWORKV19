@@ -11,7 +11,9 @@ import {
   Upload, 
   MousePointer2,
   Settings2,
-  ListVideo
+  ListVideo,
+  PlayCircle,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -95,6 +97,8 @@ export function Toolbar({ onExport, onSave, onLoad }: { onExport: (fileName?: st
     { label: 'Junction', icon: GitCommitHorizontal, action: () => addNode('junction', { x: 200, y: 150 }), color: 'text-red-500' },
     { label: 'Surge Tank', icon: PlusCircle, action: () => addNode('surgeTank', { x: 250, y: 100 }), color: 'text-orange-600' },
     { label: 'Flow BC', icon: ArrowRightCircle, action: () => addNode('flowBoundary', { x: 50, y: 150 }), color: 'text-green-600' },
+    { label: 'Pump', icon: PlayCircle, action: () => addNode('pump', { x: 300, y: 150 }), color: 'text-orange-500' },
+    { label: 'Check Valve', icon: ShieldCheck, action: () => addNode('checkValve', { x: 350, y: 150 }), color: 'text-violet-600' },
   ];
 
   const handleRunWhamo = async (fileName?: string) => {
@@ -180,7 +184,7 @@ export function Toolbar({ onExport, onSave, onLoad }: { onExport: (fileName?: st
                         const variables = ["Q", "HEAD", "ELEV", "VEL", "PRESS", "PIEZHEAD"];
                         
                         nodes.forEach(node => {
-                          const isSurgeTank = node.data.type === 'surgeTank';
+                          const isSpecialElem = node.data.type === 'surgeTank' || node.data.type === 'pump' || node.data.type === 'checkValve' || node.type === 'surgeTank' || node.type === 'pump' || node.type === 'checkValve';
                           
                           types.forEach(type => {
                             // Regular node request
@@ -199,8 +203,8 @@ export function Toolbar({ onExport, onSave, onLoad }: { onExport: (fileName?: st
                               });
                             }
 
-                            // If it's a surge tank, also add the ELEM request
-                            if (isSurgeTank) {
+                            // If it's a surge tank, pump, or check valve, also add the ELEM request
+                            if (isSpecialElem) {
                               const existsElem = outputRequests.some(req => 
                                 req.elementId === node.id && 
                                 req.requestType === type &&
@@ -272,7 +276,7 @@ export function Toolbar({ onExport, onSave, onLoad }: { onExport: (fileName?: st
                     <SelectContent>
                       <SelectItem value="_" disabled>Elements</SelectItem>
                       {nodes
-                        .filter(n => n.data.type === 'surgeTank')
+                        .filter(n => n.data.type === 'surgeTank' || n.data.type === 'pump' || n.data.type === 'checkValve' || n.type === 'surgeTank' || n.type === 'pump' || n.type === 'checkValve')
                         .filter(n => !outputRequests.some(req => req.elementId === n.id && req.requestType === requestType && req.isElement))
                         .map(n => (
                           <SelectItem key={`element-${n.id}`} value={`element:${n.id}`}>
@@ -367,7 +371,8 @@ export function Toolbar({ onExport, onSave, onLoad }: { onExport: (fileName?: st
                     })
                     .map(req => {
                     const el = nodes.find(n => n.id === req.elementId) || edges.find(e => e.id === req.elementId);
-                    const isNodeElement = req.elementType === 'node' && el?.data?.type === 'surgeTank' && req.isElement;
+                    const isSpecialElemType = el?.data?.type === 'surgeTank' || el?.data?.type === 'pump' || el?.data?.type === 'checkValve' || el?.type === 'surgeTank' || el?.type === 'pump' || el?.type === 'checkValve';
+                    const isNodeElement = req.elementType === 'node' && isSpecialElemType && req.isElement;
                     const displayLabel = isNodeElement 
                       ? el?.data?.label 
                       : (el?.data?.nodeNumber?.toString() || el?.data?.label || req.elementId);

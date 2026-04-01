@@ -57,7 +57,7 @@ export function generateInpFile(nodes: WhamoNode[], edges: WhamoEdge[], autoDown
     const actualNodeId = node.data.nodeNumber?.toString() || node.id;
 
     // Elements AT this node
-    if (node.type === 'reservoir' || node.type === 'surgeTank' || node.type === 'flowBoundary') {
+    if (node.type === 'reservoir' || node.type === 'surgeTank' || node.type === 'flowBoundary' || node.type === 'pump' || node.type === 'checkValve') {
       connectivityLines.push(`ELEM ${node.data.label} AT ${actualNodeId}`);
       nodeIdsWithSpecialElements.add(actualNodeId);
     }
@@ -337,6 +337,50 @@ export function generateInpFile(nodes: WhamoNode[], edges: WhamoEdge[], autoDown
     addL(`FLOWBC ID ${d.label} QSCHEDULE ${d.scheduleNumber} FINISH`);
   });
 
+  const exportedPumpLabels = new Set<string>();
+  nodes.filter(n => n.type === 'pump').forEach(n => {
+    const d = n.data;
+    if (!d) return;
+    const label = d.label;
+    if (exportedPumpLabels.has(label)) return;
+    exportedPumpLabels.add(label);
+    const unit = d.unit || globalUnit;
+    addComment(d.comment);
+    addL('PUMP');
+    addL(` ID ${label}`);
+    addL(` HPUMP ${toFPS(Number(d.pumpHead ?? 50), unit, 'elevation')}`);
+    addL(` QPUMP ${toFPS(Number(d.pumpFlow ?? 10), unit, 'flow')}`);
+    if (d.speedFactor !== undefined && Number(d.speedFactor) !== 1.0) {
+      addL(` SPEED ${d.speedFactor}`);
+    }
+    if (d.pumpStatus && d.pumpStatus !== 'ACTIVE') {
+      addL(` STATUS ${d.pumpStatus}`);
+    }
+    addL('FINISH');
+    addL('');
+  });
+
+  const exportedValveLabels = new Set<string>();
+  nodes.filter(n => n.type === 'checkValve').forEach(n => {
+    const d = n.data;
+    if (!d) return;
+    const label = d.label;
+    if (exportedValveLabels.has(label)) return;
+    exportedValveLabels.add(label);
+    addComment(d.comment);
+    addL('VALVE');
+    addL(` ID ${label}`);
+    addL(' TYPE CHECK');
+    if (d.closureLoss !== undefined) {
+      addL(` CLOS ${d.closureLoss}`);
+    }
+    if (d.valveStatus && d.valveStatus === 'CLOSED') {
+      addL(' STATUS CLOSED');
+    }
+    addL('FINISH');
+    addL('');
+  });
+
   addL('');
   addL('');
   const hSchedules = state.hSchedules || [];
@@ -414,8 +458,9 @@ export function generateInpFile(nodes: WhamoNode[], edges: WhamoEdge[], autoDown
           ? nodes.find(n => n.id === req.elementId)
           : edges.find(e => e.id === req.elementId);
         
-        const isSurgeTank = req.elementType === 'node' && element?.data?.type === 'surgeTank';
-        const useElementRequest = isSurgeTank && req.isElement;
+        const isSpecialElem = req.elementType === 'node' && (element?.data?.type === 'surgeTank' || element?.data?.type === 'pump' || element?.data?.type === 'checkValve' || element?.type === 'surgeTank' || element?.type === 'pump' || element?.type === 'checkValve');
+        const isSurgeTank = isSpecialElem;
+        const useElementRequest = isSpecialElem && req.isElement;
         
         const label = useElementRequest 
           ? (element?.data?.label || element?.id || req.elementId)

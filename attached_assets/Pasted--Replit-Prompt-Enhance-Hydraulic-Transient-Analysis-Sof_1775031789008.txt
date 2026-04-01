@@ -1,0 +1,130 @@
+✅ Replit Prompt: Enhance Hydraulic Transient Analysis Software (Existing Project)
+
+Objective:
+Upgrade my existing hydraulic transient analysis software by adding Pump and Check Valve elements (currently missing), ensuring all .inp file variables (including negative discharge cases) are fully mapped, editable, and correctly generated via the UI (side panel + flex table), without changing the existing project structure, database schema, or core workflow.
+
+🔧 Scope of Work
+1. Add Missing Elements in Menu
+
+Add the following elements in the Insert menu + toolbar (same style as existing elements like Reservoir, Node, Junction, etc.):
+
+➤ Pump
+Icon: Circle + filled triangle (as per reference image)
+Label format: P1, P2, ...
+Function: Adds energy (head) to flow
+➤ Check Valve
+Icon: Triangle + vertical bar
+Label format: VC1, VC2, ...
+Function: One-way flow control
+
+👉 Follow same UI/UX, color theme, and drag-drop behavior as existing elements.
+
+2. Side Panel Configuration (VERY IMPORTANT)
+
+When user selects Pump or Check Valve, show proper editable fields in the right-side panel.
+
+➤ Pump Parameters (match .inp file structure)
+Label / ID
+Start Node
+End Node
+Head / Pump Curve Data
+Flow (allow negative discharge support)
+Status (Active / Inactive)
+Optional: Speed factor / control
+
+👉 Ensure:
+
+Values directly map to .inp file
+Supports negative discharge (reverse flow) correctly
+Validation: allow negative where required
+➤ Check Valve Parameters
+Label / ID
+Start Node
+End Node
+Status (Open / Closed)
+Loss coefficient (if applicable)
+
+👉 Ensure:
+
+One-way logic enforced in simulation
+Proper .inp mapping
+3. Flex Table (Data Table) Integration
+
+Add Pump and Check Valve entries into the flex table/grid system:
+
+➤ Pump Table Columns
+ID
+From Node
+To Node
+Head
+Flow
+Status
+➤ Check Valve Table Columns
+ID
+From Node
+To Node
+Status
+
+👉 Requirements:
+
+Editable inline (same as pipes/conduits)
+Sync with canvas + side panel
+Auto-update on change
+4. .inp File Parsing & Generation (CRITICAL)
+A. Import (.INP → UI)
+Parse uploaded pump1.inp file
+Extract:
+Pumps
+Check valves
+Negative discharge values
+Populate:
+Canvas diagram
+Side panel fields
+Flex table
+B. Export (UI → .INP)
+Ensure generated .inp file:
+Matches original format exactly
+Includes Pump & Check Valve sections
+Preserves negative discharge values
+Maintains correct sequence/order
+5. Hydraulic Logic Handling
+Pump:
+Adds head correctly in flow direction
+Handles reverse flow (negative discharge case)
+Check Valve:
+Restricts reverse flow
+Works correctly in transient simulation
+6. UI/UX Consistency
+Follow existing green/blue theme
+Keep icons consistent with provided reference images
+No breaking changes to:
+Existing elements
+Layout
+Database
+Flow logic
+7. Code Constraints
+❌ Do NOT modify existing DB schema
+❌ Do NOT break current .inp generation logic
+❌ Do NOT change project structure
+✅ Only extend modularly
+🎯 Expected Output
+
+After implementation:
+
+User can:
+Add Pump & Check Valve from menu
+Configure via side panel
+See/update in flex table
+System can:
+Import .inp with negative discharge
+Correctly map all variables
+Export identical .inp structure
+Simulation:
+Handles pump head & reverse flow
+Enforces check valve direction
+⚠️ Special Instruction (Important)
+
+Carefully analyze:
+
+Uploaded UI images (icons + layout)
+pump1.inp file (negative discharge case)

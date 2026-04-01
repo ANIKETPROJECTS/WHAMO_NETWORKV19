@@ -616,6 +616,16 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
       case 'flowBoundary':
         initialData = { ...initialData, label: `FB${id}`, nodeNumber, scheduleNumber: 1 };
         break;
+      case 'pump': {
+        const pumpCount = get().nodes.filter(n => n.type === 'pump').length + 1;
+        initialData = { ...initialData, label: `P${pumpCount}`, nodeNumber, elevation: 0, pumpHead: 50, pumpFlow: 10, speedFactor: 1.0, pumpStatus: 'ACTIVE' };
+        break;
+      }
+      case 'checkValve': {
+        const cvCount = get().nodes.filter(n => n.type === 'checkValve').length + 1;
+        initialData = { ...initialData, label: `VC${cvCount}`, nodeNumber, elevation: 0, valveStatus: 'OPEN', closureLoss: 1e10 };
+        break;
+      }
     }
 
     const newNode: WhamoNode = {
@@ -643,8 +653,8 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
         variables: [...availableVars]
       });
 
-      // If it's a surge tank, also add the Element request
-      if (type === 'surgeTank') {
+      // If it's a surge tank, pump, or checkValve, also add the Element request
+      if (type === 'surgeTank' || type === 'pump' || type === 'checkValve') {
         newRequests.push({
           id: `req-${Date.now()}-${Math.random()}`,
           elementId: id,
