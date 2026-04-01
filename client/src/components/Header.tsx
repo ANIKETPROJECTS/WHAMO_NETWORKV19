@@ -30,6 +30,8 @@ import {
   Info,
   CheckSquare,
   Table2,
+  PlayCircle,
+  ShieldCheck,
 } from "lucide-react";
 import { FlexTable } from "@/components/FlexTable";
 import {
@@ -466,6 +468,18 @@ export function Header({
                 >
                   <ArrowRightCircle className="w-4 h-4 text-green-600" /> Flow
                   BC
+                </MenubarItem>
+                <MenubarItem
+                  onClick={() => addNode("pump", { x: 200, y: 200 })}
+                  className="gap-2"
+                >
+                  <PlayCircle className="w-4 h-4 text-orange-500" /> Pump
+                </MenubarItem>
+                <MenubarItem
+                  onClick={() => addNode("checkValve", { x: 200, y: 250 })}
+                  className="gap-2"
+                >
+                  <ShieldCheck className="w-4 h-4 text-violet-600" /> Check Valve
                 </MenubarItem>
               </MenubarContent>
             </MenubarMenu>

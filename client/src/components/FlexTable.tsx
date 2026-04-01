@@ -748,17 +748,17 @@ function RowCells({
         dimmed={!isPump} onChange={isPump ? v => changeNode('pumpStatus', v) : undefined} testId={`cell-pumpstatus-${row.id}`} />
     );
     case 'pumpHead': return (
-      <EditableCell key={col} value={isPump ? fmt(d.pumpHead) : ''} type="number"
+      <EditableCell key={col} value={isPump ? fmt(d.pumpHead ?? 50) : ''} type="number"
         readOnly={!isPump} dimmed={!isPump}
         onChange={v => changeNode('pumpHead', v)} testId={`cell-pumphead-${row.id}`} />
     );
     case 'pumpFlow': return (
-      <EditableCell key={col} value={isPump ? fmt(d.pumpFlow) : ''} type="number"
+      <EditableCell key={col} value={isPump ? fmt(d.pumpFlow ?? 10) : ''} type="number"
         readOnly={!isPump} dimmed={!isPump}
         onChange={v => changeNode('pumpFlow', v)} testId={`cell-pumpflow-${row.id}`} />
     );
     case 'speedFactor': return (
-      <EditableCell key={col} value={isPump ? fmt(d.speedFactor) : ''} type="number"
+      <EditableCell key={col} value={isPump ? fmt(d.speedFactor ?? 1) : ''} type="number"
         readOnly={!isPump} dimmed={!isPump}
         onChange={v => changeNode('speedFactor', v)} testId={`cell-speedfactor-${row.id}`} />
     );

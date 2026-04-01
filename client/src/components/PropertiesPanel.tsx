@@ -190,19 +190,6 @@ export function PropertiesPanel() {
       </CardHeader>
       
       <CardContent className="space-y-6 pt-6">
-        {/* Delete Button */}
-        <Button 
-          variant="destructive" 
-          className="w-full gap-2" 
-          onClick={() => selectedElementId && selectedElementType && deleteElement(selectedElementId, selectedElementType)}
-          data-testid="button-delete-element"
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete Element
-        </Button>
-
-        <Separator />
-
         {/* Unit Selection */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -1174,6 +1161,19 @@ export function PropertiesPanel() {
             </>
           )}
         </div>
+
+        <Separator />
+
+        {/* Delete Button */}
+        <Button 
+          variant="destructive" 
+          className="w-full gap-2" 
+          onClick={() => selectedElementId && selectedElementType && deleteElement(selectedElementId, selectedElementType)}
+          data-testid="button-delete-element"
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete Element
+        </Button>
       </CardContent>
     </div>
   );
