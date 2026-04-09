@@ -136,12 +136,6 @@ export function validateNetwork(nodes: WhamoNode[], edges: WhamoEdge[]): { error
       if (connections.length < 1) {
         addError(n.id, `Pump ${d.label} must connect to at least one pipe.`, d.label, n.type);
       }
-      if (d.pumpHead === undefined || d.pumpHead === '') {
-        addWarning(n.id, `Pump ${d.label} missing design head (HPUMP).`, d.label, n.type);
-      }
-      if (d.pumpFlow === undefined || d.pumpFlow === '') {
-        addWarning(n.id, `Pump ${d.label} missing design flow (QPUMP).`, d.label, n.type);
-      }
     }
 
     if (n.type === 'checkValve') {
