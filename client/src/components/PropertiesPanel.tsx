@@ -273,7 +273,7 @@ export function PropertiesPanel() {
             </div>
           )}
 
-          {isNode && (element.data?.type === 'node' || element.data?.type === 'junction' || element.data?.type === 'reservoir' || element.data?.type === 'surgeTank' || element.data?.type === 'flowBoundary' || element.data?.type === 'pump' || element.data?.type === 'checkValve' || element.data?.type_st) && (
+          {isNode && (element.data?.type === 'node' || element.data?.type === 'junction' || element.data?.type === 'reservoir' || element.data?.type === 'surgeTank' || element.data?.type === 'flowBoundary' || element.data?.type_st) && (
             <>
               <div className="grid gap-2">
                 <Label htmlFor="nodeNum">Node Number</Label>
@@ -443,192 +443,6 @@ export function PropertiesPanel() {
                   </div>
                 </div>
               )}
-              {element.data?.type === 'pump' && (() => {
-                const pType = Number(element.data?.pumpType ?? 1);
-                const pc: PcharType | undefined = pcharData[pType];
-                const defaultPchar: PcharType = {
-                  sratio: Array(11).fill(0),
-                  qratio: Array(12).fill(0),
-                  hratio: Array.from({ length: 12 }, () => Array(11).fill(0)),
-                  tratio: Array(132).fill(0),
-                };
-                const activePc = pc || defaultPchar;
-
-                const arrayToText = (arr: number[]) => arr.join(' ');
-                const hratioToText = (m: number[][]) => m.map(r => r.join(' ')).join('\n');
-                const textToArray = (text: string): number[] =>
-                  text.trim().split(/[\s,\n]+/).map(parseFloat).filter(n => !isNaN(n));
-
-                const savePchar = (updates: Partial<PcharType>) => {
-                  updatePcharData(pType, { ...activePc, ...updates });
-                };
-
-                return (
-                  <>
-                    <div className="grid gap-2">
-                      <Label htmlFor="pumpStatus">Pump Status</Label>
-                      <Select
-                        value={element.data?.pumpStatus || 'ACTIVE'}
-                        onValueChange={(v) => handleChange('pumpStatus', v)}
-                      >
-                        <SelectTrigger id="pumpStatus" data-testid="select-pumpstatus">
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                          <SelectItem value="INACTIVE">INACTIVE</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="pumpType">Pump Type (PCHAR TYPE)</Label>
-                      <Select
-                        value={String(element.data?.pumpType ?? 1)}
-                        onValueChange={(v) => handleChange('pumpType', v)}
-                      >
-                        <SelectTrigger id="pumpType" data-testid="select-pumptype">
-                          <SelectValue placeholder="Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">TYPE 1</SelectItem>
-                          <SelectItem value="2">TYPE 2</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="grid gap-1">
-                        <Label htmlFor="rq" className="text-xs">Rated Flow RQ ({currentUnit === 'SI' ? 'm³/s' : 'ft³/s'})</Label>
-                        <Input id="rq" data-testid="input-rq" type="number" step="any"
-                          value={element.data?.rq !== undefined ? Number(element.data.rq) : 0}
-                          onChange={(e) => handleChange('rq', e.target.value)} className="h-7 text-xs" />
-                      </div>
-                      <div className="grid gap-1">
-                        <Label htmlFor="rhead" className="text-xs">Rated Head RHEAD ({currentUnit === 'SI' ? 'm' : 'ft'})</Label>
-                        <Input id="rhead" data-testid="input-rhead" type="number" step="any"
-                          value={element.data?.rhead !== undefined ? Number(element.data.rhead) : 0}
-                          onChange={(e) => handleChange('rhead', e.target.value)} className="h-7 text-xs" />
-                      </div>
-                      <div className="grid gap-1">
-                        <Label htmlFor="rspeed" className="text-xs">Rated Speed RSPEED (RPM)</Label>
-                        <Input id="rspeed" data-testid="input-rspeed" type="number" step="any"
-                          value={element.data?.rspeed !== undefined ? Number(element.data.rspeed) : 0}
-                          onChange={(e) => handleChange('rspeed', e.target.value)} className="h-7 text-xs" />
-                      </div>
-                      <div className="grid gap-1">
-                        <Label htmlFor="rtorque" className="text-xs">Rated Torque RTOROUE</Label>
-                        <Input id="rtorque" data-testid="input-rtorque" type="number" step="any"
-                          value={element.data?.rtorque !== undefined ? Number(element.data.rtorque) : 0}
-                          onChange={(e) => handleChange('rtorque', e.target.value)} className="h-7 text-xs" />
-                      </div>
-                      <div className="grid gap-1 col-span-2">
-                        <Label htmlFor="wr2" className="text-xs">WR² (Moment of Inertia)</Label>
-                        <Input id="wr2" data-testid="input-wr2" type="number" step="any"
-                          value={element.data?.wr2 !== undefined ? Number(element.data.wr2) : 0}
-                          onChange={(e) => handleChange('wr2', e.target.value)} className="h-7 text-xs" />
-                      </div>
-                    </div>
-
-                    <div className="border rounded-md overflow-hidden">
-                      <button
-                        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold bg-orange-50 hover:bg-orange-100 transition-colors text-orange-800"
-                        onClick={() => setShowPchar(v => !v)}
-                        data-testid="btn-toggle-pchar"
-                        type="button"
-                      >
-                        <span>Pump Characteristics (PCHAR TYPE {pType})</span>
-                        {showPchar ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                      </button>
-                      {showPchar && (
-                        <div className="p-3 space-y-3 bg-white">
-                          <p className="text-[10px] text-muted-foreground italic">
-                            PCHAR TYPE {pType} data is global — shared across all pumps of this type.
-                          </p>
-                          <div className="grid gap-1">
-                            <Label className="text-[10px] font-medium">SRATIO (11 values, space-separated)</Label>
-                            <textarea
-                              data-testid="textarea-sratio"
-                              className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-10 focus:outline-none focus:ring-1 focus:ring-orange-400"
-                              value={arrayToText(activePc.sratio)}
-                              onChange={(e) => savePchar({ sratio: textToArray(e.target.value) })}
-                            />
-                          </div>
-                          <div className="grid gap-1">
-                            <Label className="text-[10px] font-medium">QRATIO (12 values, space-separated)</Label>
-                            <textarea
-                              data-testid="textarea-qratio"
-                              className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-10 focus:outline-none focus:ring-1 focus:ring-orange-400"
-                              value={arrayToText(activePc.qratio)}
-                              onChange={(e) => savePchar({ qratio: textToArray(e.target.value) })}
-                            />
-                          </div>
-                          <div className="grid gap-1">
-                            <Label className="text-[10px] font-medium">HRATIO (12 rows × 11 cols — one row per line)</Label>
-                            <textarea
-                              data-testid="textarea-hratio"
-                              className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-28 focus:outline-none focus:ring-1 focus:ring-orange-400"
-                              value={hratioToText(activePc.hratio)}
-                              onChange={(e) => {
-                                const rows = e.target.value.trim().split('\n').map(row =>
-                                  row.trim().split(/\s+/).map(parseFloat).filter(n => !isNaN(n))
-                                ).filter(r => r.length > 0);
-                                savePchar({ hratio: rows });
-                              }}
-                            />
-                          </div>
-                          <div className="grid gap-1">
-                            <Label className="text-[10px] font-medium">TRATIO (132 flat values, space-separated, 8 per line)</Label>
-                            <textarea
-                              data-testid="textarea-tratio"
-                              className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-28 focus:outline-none focus:ring-1 focus:ring-orange-400"
-                              value={(() => {
-                                const f = activePc.tratio;
-                                const lines: string[] = [];
-                                for (let i = 0; i < f.length; i += 8) {
-                                  lines.push(f.slice(i, i + 8).join(' '));
-                                }
-                                return lines.join('\n');
-                              })()}
-                              onChange={(e) => savePchar({ tratio: textToArray(e.target.value) })}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                );
-              })()}
-
-              {element.data?.type === 'checkValve' && (
-                <>
-                  <div className="grid gap-2">
-                    <Label htmlFor="valveStatus">Valve Status</Label>
-                    <Select
-                      value={element.data?.valveStatus || 'OPEN'}
-                      onValueChange={(v) => handleChange('valveStatus', v)}
-                    >
-                      <SelectTrigger id="valveStatus">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="OPEN">OPEN</SelectItem>
-                        <SelectItem value="CLOSED">CLOSED</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="valveDiam">Diameter DIAM ({currentUnit === 'SI' ? 'm' : 'ft'})</Label>
-                    <Input
-                      id="valveDiam"
-                      data-testid="input-valvediam"
-                      type="number"
-                      step="any"
-                      value={element.data?.valveDiam !== undefined ? Number(element.data.valveDiam) : 0}
-                      onChange={(e) => handleChange('valveDiam', e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
-
               {element.data?.type === 'flowBoundary' && (
                 <>
                   <div className="grid gap-2">
@@ -706,6 +520,192 @@ export function PropertiesPanel() {
                   </div>
                 </>
               )}
+            </>
+          )}
+
+          {isNode && element.data?.type === 'pump' && (() => {
+            const pType = Number(element.data?.pumpType ?? 1);
+            const pc: PcharType | undefined = pcharData[pType];
+            const defaultPchar: PcharType = {
+              sratio: Array(11).fill(0),
+              qratio: Array(12).fill(0),
+              hratio: Array.from({ length: 12 }, () => Array(11).fill(0)),
+              tratio: Array(132).fill(0),
+            };
+            const activePc = pc || defaultPchar;
+
+            const arrayToText = (arr: number[]) => arr.join(' ');
+            const hratioToText = (m: number[][]) => m.map(r => r.join(' ')).join('\n');
+            const textToArray = (text: string): number[] =>
+              text.trim().split(/[\s,\n]+/).map(parseFloat).filter(n => !isNaN(n));
+
+            const savePchar = (updates: Partial<PcharType>) => {
+              updatePcharData(pType, { ...activePc, ...updates });
+            };
+
+            return (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="pumpStatus">Pump Status</Label>
+                  <Select
+                    value={element.data?.pumpStatus || 'ACTIVE'}
+                    onValueChange={(v) => handleChange('pumpStatus', v)}
+                  >
+                    <SelectTrigger id="pumpStatus" data-testid="select-pumpstatus">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                      <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="pumpType">Pump Type (PCHAR TYPE)</Label>
+                  <Select
+                    value={String(element.data?.pumpType ?? 1)}
+                    onValueChange={(v) => handleChange('pumpType', v)}
+                  >
+                    <SelectTrigger id="pumpType" data-testid="select-pumptype">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">TYPE 1</SelectItem>
+                      <SelectItem value="2">TYPE 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-1">
+                    <Label htmlFor="rq" className="text-xs">Rated Flow RQ ({currentUnit === 'SI' ? 'm³/s' : 'ft³/s'})</Label>
+                    <Input id="rq" data-testid="input-rq" type="number" step="any"
+                      value={element.data?.rq !== undefined ? Number(element.data.rq) : 0}
+                      onChange={(e) => handleChange('rq', e.target.value)} className="h-7 text-xs" />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="rhead" className="text-xs">Rated Head RHEAD ({currentUnit === 'SI' ? 'm' : 'ft'})</Label>
+                    <Input id="rhead" data-testid="input-rhead" type="number" step="any"
+                      value={element.data?.rhead !== undefined ? Number(element.data.rhead) : 0}
+                      onChange={(e) => handleChange('rhead', e.target.value)} className="h-7 text-xs" />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="rspeed" className="text-xs">Rated Speed RSPEED (RPM)</Label>
+                    <Input id="rspeed" data-testid="input-rspeed" type="number" step="any"
+                      value={element.data?.rspeed !== undefined ? Number(element.data.rspeed) : 0}
+                      onChange={(e) => handleChange('rspeed', e.target.value)} className="h-7 text-xs" />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="rtorque" className="text-xs">Rated Torque RTOROUE</Label>
+                    <Input id="rtorque" data-testid="input-rtorque" type="number" step="any"
+                      value={element.data?.rtorque !== undefined ? Number(element.data.rtorque) : 0}
+                      onChange={(e) => handleChange('rtorque', e.target.value)} className="h-7 text-xs" />
+                  </div>
+                  <div className="grid gap-1 col-span-2">
+                    <Label htmlFor="wr2" className="text-xs">WR² (Moment of Inertia)</Label>
+                    <Input id="wr2" data-testid="input-wr2" type="number" step="any"
+                      value={element.data?.wr2 !== undefined ? Number(element.data.wr2) : 0}
+                      onChange={(e) => handleChange('wr2', e.target.value)} className="h-7 text-xs" />
+                  </div>
+                </div>
+
+                <div className="border rounded-md overflow-hidden">
+                  <button
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold bg-orange-50 hover:bg-orange-100 transition-colors text-orange-800"
+                    onClick={() => setShowPchar(v => !v)}
+                    data-testid="btn-toggle-pchar"
+                    type="button"
+                  >
+                    <span>Pump Characteristics (PCHAR TYPE {pType})</span>
+                    {showPchar ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  </button>
+                  {showPchar && (
+                    <div className="p-3 space-y-3 bg-white">
+                      <p className="text-[10px] text-muted-foreground italic">
+                        PCHAR TYPE {pType} data is global — shared across all pumps of this type.
+                      </p>
+                      <div className="grid gap-1">
+                        <Label className="text-[10px] font-medium">SRATIO (11 values, space-separated)</Label>
+                        <textarea
+                          data-testid="textarea-sratio"
+                          className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-10 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                          value={arrayToText(activePc.sratio)}
+                          onChange={(e) => savePchar({ sratio: textToArray(e.target.value) })}
+                        />
+                      </div>
+                      <div className="grid gap-1">
+                        <Label className="text-[10px] font-medium">QRATIO (12 values, space-separated)</Label>
+                        <textarea
+                          data-testid="textarea-qratio"
+                          className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-10 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                          value={arrayToText(activePc.qratio)}
+                          onChange={(e) => savePchar({ qratio: textToArray(e.target.value) })}
+                        />
+                      </div>
+                      <div className="grid gap-1">
+                        <Label className="text-[10px] font-medium">HRATIO (12 rows × 11 cols — one row per line)</Label>
+                        <textarea
+                          data-testid="textarea-hratio"
+                          className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-28 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                          value={hratioToText(activePc.hratio)}
+                          onChange={(e) => {
+                            const rows = e.target.value.trim().split('\n').map(row =>
+                              row.trim().split(/\s+/).map(parseFloat).filter(n => !isNaN(n))
+                            ).filter(r => r.length > 0);
+                            savePchar({ hratio: rows });
+                          }}
+                        />
+                      </div>
+                      <div className="grid gap-1">
+                        <Label className="text-[10px] font-medium">TRATIO (132 flat values, space-separated, 8 per line)</Label>
+                        <textarea
+                          data-testid="textarea-tratio"
+                          className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-28 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                          value={(() => {
+                            const f = activePc.tratio;
+                            const lines: string[] = [];
+                            for (let i = 0; i < f.length; i += 8) {
+                              lines.push(f.slice(i, i + 8).join(' '));
+                            }
+                            return lines.join('\n');
+                          })()}
+                          onChange={(e) => savePchar({ tratio: textToArray(e.target.value) })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+
+          {isNode && element.data?.type === 'checkValve' && (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor="valveStatus">Valve Status</Label>
+                <Select
+                  value={element.data?.valveStatus || 'OPEN'}
+                  onValueChange={(v) => handleChange('valveStatus', v)}
+                >
+                  <SelectTrigger id="valveStatus">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OPEN">OPEN</SelectItem>
+                    <SelectItem value="CLOSED">CLOSED</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="valveDiam">Diameter DIAM ({currentUnit === 'SI' ? 'm' : 'ft'})</Label>
+                <Input
+                  id="valveDiam"
+                  data-testid="input-valvediam"
+                  type="number"
+                  step="any"
+                  value={element.data?.valveDiam !== undefined ? Number(element.data.valveDiam) : 0}
+                  onChange={(e) => handleChange('valveDiam', e.target.value)}
+                />
+              </div>
             </>
           )}
 
