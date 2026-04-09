@@ -129,7 +129,7 @@ interface NetworkState {
   updateEdgeData: (id: string, data: Partial<EdgeData>) => void;
   deleteElement: (id: string, type: 'node' | 'edge') => void;
   selectElement: (id: string | null, type: 'node' | 'edge' | null) => void;
-  loadNetwork: (nodes: WhamoNode[], edges: WhamoEdge[], params?: ComputationalParameters, requests?: OutputRequest[], projectName?: string, fileHandle?: FileSystemFileHandle, pcharData?: Record<number, PcharType>) => void;
+  loadNetwork: (nodes: WhamoNode[], edges: WhamoEdge[], params?: ComputationalParameters, requests?: OutputRequest[], projectName?: string, fileHandle?: FileSystemFileHandle, pcharData?: Record<number, PcharType>, snapshotTimes?: number[]) => void;
   clearNetwork: () => void;
   updatePcharData: (pumpType: number, data: PcharType) => void;
   autoSelectOutputRequests: () => void;
@@ -808,7 +808,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     set({ selectedElementId: id, selectedElementType: type });
   },
 
-  loadNetwork: (nodes, edges, params, requests, projectName, fileHandle, pcharData) => {
+  loadNetwork: (nodes, edges, params, requests, projectName, fileHandle, pcharData, snapshotTimes) => {
     const maxId = Math.max(
       ...nodes.map(n => parseInt(n.id) || 0),
       ...edges.map(e => parseInt(e.id) || 0),
@@ -867,6 +867,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
       hSchedules: extractedHSchedules,
       computationalParams: params || get().computationalParams,
       outputRequests: requests || [],
+      snapshotTimes: snapshotTimes || [],
       projectName: projectName || get().projectName,
       loadedFileHandle: fileHandle || null,
       pcharData: pcharData || {},

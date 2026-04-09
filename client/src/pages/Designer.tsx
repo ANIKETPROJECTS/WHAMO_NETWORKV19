@@ -99,6 +99,8 @@ function DesignerInner() {
     projectName,
     computationalParams,
     outputRequests,
+    pcharData,
+    snapshotTimes,
     onNodesChange: storeOnNodesChange, 
     onEdgesChange: storeOnEdgesChange,
     onConnect: storeOnConnect, 
@@ -123,7 +125,9 @@ function DesignerInner() {
       nodes, 
       edges,
       computationalParams,
-      outputRequests
+      outputRequests,
+      pcharData,
+      snapshotTimes,
     };
 
     try {
@@ -328,7 +332,7 @@ function DesignerInner() {
           const json = JSON.parse(content);
           if (json.nodes && json.edges) {
             const loadedProjectName = json.projectName || file.name.replace(/\.json$/i, '');
-            loadNetwork(json.nodes, json.edges, json.computationalParams, json.outputRequests, loadedProjectName, handle);
+            loadNetwork(json.nodes, json.edges, json.computationalParams, json.outputRequests, loadedProjectName, handle, json.pcharData, json.snapshotTimes);
             setProjectState("active");
             toast({ title: "Project Loaded", description: `Network topology "${loadedProjectName}" restored from JSON.` });
           } else {
@@ -369,7 +373,7 @@ function DesignerInner() {
           if (json.nodes && json.edges) {
             // Use project name from file or fallback to filename
             const loadedProjectName = json.projectName || file.name.replace(/\.json$/i, '');
-            loadNetwork(json.nodes, json.edges, json.computationalParams, json.outputRequests, loadedProjectName);
+            loadNetwork(json.nodes, json.edges, json.computationalParams, json.outputRequests, loadedProjectName, undefined, json.pcharData, json.snapshotTimes);
             setProjectState("active");
             toast({ title: "Project Loaded", description: `Network topology "${loadedProjectName}" restored from JSON.` });
           } else {
