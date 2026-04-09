@@ -625,10 +625,10 @@ export function PropertiesPanel() {
             const pType = Number(element.data?.pumpType ?? 1);
             const pc: PcharType | undefined = pcharData[pType];
             const defaultPchar: PcharType = {
-              sratio: Array(11).fill(0),
-              qratio: Array(12).fill(0),
-              hratio: Array.from({ length: 12 }, () => Array(11).fill(0)),
-              tratio: Array(132).fill(0),
+              sratio: [],
+              qratio: [],
+              hratio: [],
+              tratio: [],
             };
             const activePc = pc || defaultPchar;
 

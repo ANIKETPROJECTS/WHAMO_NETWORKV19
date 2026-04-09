@@ -653,10 +653,10 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
 
     if (newPumpTypeToInit !== null) {
       const defaultPchar: PcharType = {
-        sratio: Array(11).fill(0),
-        qratio: Array(12).fill(0),
-        hratio: Array.from({ length: 12 }, () => Array(11).fill(0)),
-        tratio: Array(132).fill(0),
+        sratio: [],
+        qratio: [],
+        hratio: [],
+        tratio: [],
       };
       set({ pcharData: { ...get().pcharData, [newPumpTypeToInit]: defaultPchar } });
     }
