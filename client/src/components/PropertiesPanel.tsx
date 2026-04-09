@@ -667,6 +667,43 @@ export function PropertiesPanel() {
                         {Object.keys(pcharData).map(Number).sort((a, b) => a - b).map(t => (
                           <SelectItem key={t} value={String(t)}>TYPE {t}</SelectItem>
                         ))}
+                        <div
+                          className="flex gap-1 items-center px-2 py-1.5 border-t mt-1"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="number"
+                            min="1"
+                            className="flex h-7 w-full rounded border border-input bg-transparent px-2 py-0.5 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            placeholder="Type no. (blank = auto)"
+                            value={newTypeNum}
+                            onChange={(e) => setNewTypeNum(e.target.value)}
+                            data-testid="input-new-pchar-type"
+                          />
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7 shrink-0"
+                            title="Add new PCHAR type"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const parsed = newTypeNum.trim() !== "" ? parseInt(newTypeNum) : undefined;
+                              const existingNums = Object.keys(pcharData).map(Number);
+                              const nextNum = parsed !== undefined && !isNaN(parsed)
+                                ? parsed
+                                : (existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1);
+                              if (pcharData[nextNum] !== undefined) return;
+                              addPcharType(nextNum);
+                              handleChange('pumpType', String(nextNum));
+                              setNewTypeNum("");
+                            }}
+                            data-testid="button-add-pchar-type"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </SelectContent>
                     </Select>
                     <Button
@@ -684,37 +721,6 @@ export function PropertiesPanel() {
                       data-testid="button-delete-pchar-type"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="flex gap-1 items-center">
-                    <input
-                      type="number"
-                      min="1"
-                      className="flex h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      placeholder="Type no. (blank = auto)"
-                      value={newTypeNum}
-                      onChange={(e) => setNewTypeNum(e.target.value)}
-                      data-testid="input-new-pchar-type"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 shrink-0"
-                      title="Add new PCHAR type"
-                      onClick={() => {
-                        const parsed = newTypeNum.trim() !== "" ? parseInt(newTypeNum) : undefined;
-                        const existingNums = Object.keys(pcharData).map(Number);
-                        const nextNum = parsed !== undefined && !isNaN(parsed)
-                          ? parsed
-                          : (existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1);
-                        if (pcharData[nextNum] !== undefined) return;
-                        addPcharType(nextNum);
-                        handleChange('pumpType', String(nextNum));
-                        setNewTypeNum("");
-                      }}
-                      data-testid="button-add-pchar-type"
-                    >
-                      <Plus className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
