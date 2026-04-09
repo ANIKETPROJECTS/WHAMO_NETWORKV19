@@ -38,10 +38,6 @@ function PcharEditor({ pType, activePc, updatePcharData }: {
     setTratioText(tratioToText(activePc.tratio));
   }, [pType]);
 
-  const sratioCount = textToArray(sratioText).length;
-  const qratioCount = textToArray(qratioText).length;
-  const expectedTotal = sratioCount * qratioCount;
-
   const savePchar = (updates: Partial<PcharType>) => {
     updatePcharData(pType, { ...activePc, ...updates });
   };
@@ -63,7 +59,7 @@ function PcharEditor({ pType, activePc, updatePcharData }: {
             PCHAR TYPE {pType} data is global — shared across all pumps of this type.
           </p>
           <div className="grid gap-1">
-            <Label className="text-[10px] font-medium">SRATIO ({sratioCount} values, space-separated)</Label>
+            <Label className="text-[10px] font-medium">SRATIO (space-separated)</Label>
             <textarea
               data-testid="textarea-sratio"
               className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-10 focus:outline-none focus:ring-1 focus:ring-orange-400"
@@ -73,7 +69,7 @@ function PcharEditor({ pType, activePc, updatePcharData }: {
             />
           </div>
           <div className="grid gap-1">
-            <Label className="text-[10px] font-medium">QRATIO ({qratioCount} values, space-separated)</Label>
+            <Label className="text-[10px] font-medium">QRATIO (space-separated)</Label>
             <textarea
               data-testid="textarea-qratio"
               className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-10 focus:outline-none focus:ring-1 focus:ring-orange-400"
@@ -83,9 +79,7 @@ function PcharEditor({ pType, activePc, updatePcharData }: {
             />
           </div>
           <div className="grid gap-1">
-            <Label className="text-[10px] font-medium">
-              HRATIO ({qratioCount} rows × {sratioCount} cols = {expectedTotal} values — one row per line)
-            </Label>
+            <Label className="text-[10px] font-medium">HRATIO (one row per line)</Label>
             <textarea
               data-testid="textarea-hratio"
               className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-28 focus:outline-none focus:ring-1 focus:ring-orange-400"
@@ -100,9 +94,7 @@ function PcharEditor({ pType, activePc, updatePcharData }: {
             />
           </div>
           <div className="grid gap-1">
-            <Label className="text-[10px] font-medium">
-              TRATIO ({expectedTotal} flat values, space-separated, 8 per line)
-            </Label>
+            <Label className="text-[10px] font-medium">TRATIO (space-separated, 8 per line)</Label>
             <textarea
               data-testid="textarea-tratio"
               className="w-full border rounded text-[10px] font-mono p-1.5 resize-none h-28 focus:outline-none focus:ring-1 focus:ring-orange-400"
