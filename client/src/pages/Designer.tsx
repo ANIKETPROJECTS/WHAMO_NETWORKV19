@@ -119,11 +119,57 @@ function DesignerInner() {
     addNode,
   } = useNetworkStore();
 
+  // Fields that live in a pipe profile (shared across same-label edges)
+  const PIPE_PROFILE_FIELDS = [
+    'type', 'length', 'diameter', 'celerity', 'friction', 'numSegments',
+    'variable', 'distance', 'area', 'd', 'a', 'pipeE', 'pipeWT', 'manningsN',
+    'cplus', 'cminus', 'hasAddedLoss', 'includeNumSegments', 'comment', '_unitCache',
+  ];
+
+  const buildPipeProfiles = (edgeList: WhamoEdge[]) => {
+    const profiles: Record<string, any> = {};
+    edgeList.forEach(e => {
+      const lbl = (e.data?.label as string) || '';
+      const etype = e.data?.type as string;
+      if (!lbl || (etype !== 'conduit' && etype !== 'dummy') || profiles[lbl]) return;
+      const profileData: Record<string, any> = {};
+      PIPE_PROFILE_FIELDS.forEach(f => {
+        const v = (e.data as any)?.[f];
+        if (v !== undefined) profileData[f] = v;
+      });
+      profiles[lbl] = profileData;
+    });
+    return profiles;
+  };
+
+  const compactEdges = (edgeList: WhamoEdge[], profiles: Record<string, any>) =>
+    edgeList.map(e => {
+      const lbl = (e.data?.label as string) || '';
+      if (!lbl || !profiles[lbl]) return e;
+      // Keep only connectivity + label; profile data is stored once in pipeProfiles
+      const slimData: Record<string, any> = { label: lbl };
+      Object.entries(e.data || {}).forEach(([k, v]) => {
+        if (!PIPE_PROFILE_FIELDS.includes(k)) slimData[k] = v;
+      });
+      return { ...e, data: slimData };
+    });
+
+  const expandEdges = (edgeList: any[], profiles?: Record<string, any>): WhamoEdge[] => {
+    if (!profiles) return edgeList as WhamoEdge[];
+    return edgeList.map(e => {
+      const lbl = e.data?.label as string;
+      if (!lbl || !profiles[lbl]) return e;
+      return { ...e, data: { ...profiles[lbl], ...e.data } };
+    }) as WhamoEdge[];
+  };
+
   const handleSave = async () => {
+    const profiles = buildPipeProfiles(edges as WhamoEdge[]);
     const data = { 
       projectName,
       nodes, 
-      edges,
+      edges: compactEdges(edges as WhamoEdge[], profiles),
+      pipeProfiles: profiles,
       computationalParams,
       outputRequests,
       pcharData,
@@ -332,7 +378,8 @@ function DesignerInner() {
           const json = JSON.parse(content);
           if (json.nodes && json.edges) {
             const loadedProjectName = json.projectName || file.name.replace(/\.json$/i, '');
-            loadNetwork(json.nodes, json.edges, json.computationalParams, json.outputRequests, loadedProjectName, handle, json.pcharData, json.snapshotTimes);
+            const expandedEdges = expandEdges(json.edges, json.pipeProfiles);
+            loadNetwork(json.nodes, expandedEdges, json.computationalParams, json.outputRequests, loadedProjectName, handle, json.pcharData, json.snapshotTimes);
             setProjectState("active");
             toast({ title: "Project Loaded", description: `Network topology "${loadedProjectName}" restored from JSON.` });
           } else {
@@ -373,7 +420,8 @@ function DesignerInner() {
           if (json.nodes && json.edges) {
             // Use project name from file or fallback to filename
             const loadedProjectName = json.projectName || file.name.replace(/\.json$/i, '');
-            loadNetwork(json.nodes, json.edges, json.computationalParams, json.outputRequests, loadedProjectName, undefined, json.pcharData, json.snapshotTimes);
+            const expandedEdges = expandEdges(json.edges, json.pipeProfiles);
+            loadNetwork(json.nodes, expandedEdges, json.computationalParams, json.outputRequests, loadedProjectName, undefined, json.pcharData, json.snapshotTimes);
             setProjectState("active");
             toast({ title: "Project Loaded", description: `Network topology "${loadedProjectName}" restored from JSON.` });
           } else {
