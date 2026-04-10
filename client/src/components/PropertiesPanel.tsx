@@ -506,7 +506,7 @@ export function PropertiesPanel() {
                 })()}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="elev">Elevation ({currentUnit === 'SI' ? 'm' : 'ft'})</Label>
+                <Label htmlFor="elev">{element.data?.type === 'surgeTank' ? 'Node Elevation' : 'Elevation'} ({currentUnit === 'SI' ? 'm' : 'ft'})</Label>
                 <Input 
                   id="elev" 
                   type="number" 
