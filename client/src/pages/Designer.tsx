@@ -235,9 +235,41 @@ function DesignerInner() {
         });
         return;
       }
+
+      const MAX_CONNECTIONS = 6;
+      const currentEdges = edges as WhamoEdge[];
+      const sourceDegree = currentEdges.filter(
+        e => e.source === params.source || e.target === params.source
+      ).length;
+      const targetDegree = currentEdges.filter(
+        e => e.source === params.target || e.target === params.target
+      ).length;
+
+      if (sourceDegree >= MAX_CONNECTIONS) {
+        const sourceNode = nodes.find(n => n.id === params.source);
+        const label = (sourceNode?.data?.label as string) || `Node ${sourceNode?.data?.nodeNumber ?? params.source}`;
+        toast({
+          variant: "destructive",
+          title: "Connection Limit Reached",
+          description: `"${label}" already has ${MAX_CONNECTIONS} connections. WHAMO allows a maximum of ${MAX_CONNECTIONS} pipes at a junction.`,
+        });
+        return;
+      }
+
+      if (targetDegree >= MAX_CONNECTIONS) {
+        const targetNode = nodes.find(n => n.id === params.target);
+        const label = (targetNode?.data?.label as string) || `Node ${targetNode?.data?.nodeNumber ?? params.target}`;
+        toast({
+          variant: "destructive",
+          title: "Connection Limit Reached",
+          description: `"${label}" already has ${MAX_CONNECTIONS} connections. WHAMO allows a maximum of ${MAX_CONNECTIONS} pipes at a junction.`,
+        });
+        return;
+      }
+
       storeOnConnect(params);
     },
-    [storeOnConnect, toast, isLocked]
+    [storeOnConnect, toast, isLocked, edges, nodes]
   );
 
   const onConnectEnd = useCallback(
