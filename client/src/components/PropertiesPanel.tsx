@@ -1246,7 +1246,13 @@ export function PropertiesPanel() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="celerity">Wave Speed ({currentUnit === 'SI' ? 'm/s' : 'ft/s'})</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="celerity">Wave Speed ({currentUnit === 'SI' ? 'm/s' : 'ft/s'})</Label>
+                    {(parseFloat(element.data?.pipeE) > 0 && parseFloat(element.data?.pipeWT) > 0)
+                      ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">Auto</span>
+                      : <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium" title="Set E and WT below to auto-calculate">Manual — set E &amp; WT to auto</span>
+                    }
+                  </div>
                   <Input 
                     id="celerity" 
                     type="text" inputMode="decimal" 
